@@ -1,0 +1,660 @@
+@page "/components"
+
+<PageTitle>Components - Blazorise POC</PageTitle>
+
+<Container Fluid>
+    <Heading Size="HeadingSize.Is3" Margin="Margin.Is3.FromBottom">Blazorise Components Showcase</Heading>
+    <Divider />
+
+    <Tabs SelectedTab="@selectedTab" SelectedTabChanged="@OnSelectedTabChanged">
+        <Items>
+            <Tab Name="buttons">
+                <Icon Name="IconName.Circle" /> Buttons
+            </Tab>
+            <Tab Name="forms">
+                <Icon Name="IconName.Edit" /> Forms
+            </Tab>
+            <Tab Name="alerts">
+                <Icon Name="IconName.Bell" /> Alerts
+            </Tab>
+            <Tab Name="modals">
+                <Icon Name="IconName.Square" /> Modals
+            </Tab>
+            <Tab Name="cards">
+                <Icon Name="IconName.IdCard" /> Cards
+            </Tab>
+            <Tab Name="badges">
+                <Icon Name="IconName.Tag" /> Badges & Tags
+            </Tab>
+            <Tab Name="progress">
+                <Icon Name="IconName.ChartLine" /> Progress
+            </Tab>
+            <Tab Name="other">
+                <Icon Name="IconName.List" /> Other
+            </Tab>
+        </Items>
+        <Content>
+            <!-- BUTTONS -->
+            <TabPanel Name="buttons">
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Button Colors</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Buttons>
+                            <Button Color="Color.Primary">Primary</Button>
+                            <Button Color="Color.Secondary">Secondary</Button>
+                            <Button Color="Color.Success">Success</Button>
+                            <Button Color="Color.Danger">Danger</Button>
+                            <Button Color="Color.Warning">Warning</Button>
+                            <Button Color="Color.Info">Info</Button>
+                            <Button Color="Color.Light">Light</Button>
+                            <Button Color="Color.Dark">Dark</Button>
+                            <Button Color="Color.Link">Link</Button>
+                        </Buttons>
+                    </CardBody>
+                </Card>
+
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Outline Buttons</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Buttons>
+                            <Button Color="Color.Primary" Outline>Primary</Button>
+                            <Button Color="Color.Secondary" Outline>Secondary</Button>
+                            <Button Color="Color.Success" Outline>Success</Button>
+                            <Button Color="Color.Danger" Outline>Danger</Button>
+                        </Buttons>
+                    </CardBody>
+                </Card>
+
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Sizes and States</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Div Margin="Margin.Is2.FromBottom">
+                            <Button Color="Color.Primary" Size="Size.Small">Small</Button>
+                            <Button Color="Color.Primary" Size="Size.Medium">Medium</Button>
+                            <Button Color="Color.Primary" Size="Size.Large">Large</Button>
+                        </Div>
+                        <Div Margin="Margin.Is2.FromBottom">
+                            <Button Color="Color.Success" Block>Block Button</Button>
+                        </Div>
+                        <Div Margin="Margin.Is2.FromBottom">
+                            <Button Color="Color.Primary" Loading="@isLoading" Clicked="SimulateLoad">
+                                <Icon Name="IconName.Sync" /> @(isLoading ? "Loading..." : "Simulate Load")
+                            </Button>
+                            <Button Color="Color.Secondary" Disabled>Disabled</Button>
+                        </Div>
+                    </CardBody>
+                </Card>
+
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Buttons with Icons</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Buttons>
+                            <Button Color="Color.Primary"><Icon Name="IconName.Save" /> Save</Button>
+                            <Button Color="Color.Danger"><Icon Name="IconName.Delete" /> Delete</Button>
+                            <Button Color="Color.Info"><Icon Name="IconName.Download" /> Download</Button>
+                            <Button Color="Color.Success"><Icon Name="IconName.Add" /> Add</Button>
+                        </Buttons>
+                    </CardBody>
+                </Card>
+            </TabPanel>
+
+            <!-- FORMS -->
+            <TabPanel Name="forms">
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Text Inputs</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Field>
+                            <FieldLabel>Name</FieldLabel>
+                            <TextEdit @bind-Text="name" Placeholder="Enter your name" />
+                            <FieldHelp>Help text below the field</FieldHelp>
+                        </Field>
+                        <Field>
+                            <FieldLabel>Email</FieldLabel>
+                            <TextEdit @bind-Text="email" Role="TextRole.Email" Placeholder="email@example.com">
+                                <Feedback>
+                                    <ValidationSuccess>Valid email</ValidationSuccess>
+                                    <ValidationError>Invalid email</ValidationError>
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                        <Field>
+                            <FieldLabel>Password</FieldLabel>
+                            <TextEdit @bind-Text="password" Role="TextRole.Password" Placeholder="********" />
+                        </Field>
+                        <Field>
+                            <FieldLabel>Text Area</FieldLabel>
+                            <MemoEdit @bind-Text="description" Rows="3" Placeholder="Description..." />
+                        </Field>
+                    </CardBody>
+                </Card>
+
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Selects and Checks</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Field>
+                            <FieldLabel>Country</FieldLabel>
+                            <Select @bind-SelectedValue="selectedCountry">
+                                <SelectItem Value="@("mx")">Mexico</SelectItem>
+                                <SelectItem Value="@("ar")">Argentina</SelectItem>
+                                <SelectItem Value="@("es")">Spain</SelectItem>
+                                <SelectItem Value="@("us")">United States</SelectItem>
+                            </Select>
+                        </Field>
+                        <Field>
+                            <Check TValue="bool" @bind-Checked="acceptTerms">I accept the terms and conditions</Check>
+                        </Field>
+                        <Field>
+                            <Check TValue="bool" @bind-Checked="receiveNotifications">I want to receive notifications</Check>
+                        </Field>
+                        <Field>
+                            <FieldLabel>Gender</FieldLabel>
+                            <RadioGroup TValue="string" @bind-CheckedValue="gender">
+                                <Radio Value="@("M")">Male</Radio>
+                                <Radio Value="@("F")">Female</Radio>
+                                <Radio Value="@("O")">Other</Radio>
+                            </RadioGroup>
+                        </Field>
+                    </CardBody>
+                </Card>
+
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Numeric and Date Inputs</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Field>
+                            <FieldLabel>Age</FieldLabel>
+                            <NumericEdit @bind-Value="age" Min="0" Max="120" />
+                        </Field>
+                        <Field>
+                            <FieldLabel>Price</FieldLabel>
+                            <NumericEdit @bind-Value="price" Decimals="2" Min="0" />
+                        </Field>
+                        <Field>
+                            <FieldLabel>Date</FieldLabel>
+                            <DateEdit @bind-Date="birthDate" InputMode="DateInputMode.Date" />
+                        </Field>
+                        <Field>
+                            <FieldLabel>Switch</FieldLabel>
+                            <Switch TValue="bool" @bind-Checked="switchActive">Activate function</Switch>
+                        </Field>
+                    </CardBody>
+                </Card>
+            </TabPanel>
+
+            <!-- ALERTS -->
+            <TabPanel Name="alerts">
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Alerts</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Alert Color="Color.Primary" Visible Margin="Margin.Is2.FromBottom">
+                            <Icon Name="IconName.InfoCircle" /> <Strong>Information:</Strong> This is an informational alert.
+                        </Alert>
+                        <Alert Color="Color.Success" Visible Margin="Margin.Is2.FromBottom">
+                            <Icon Name="IconName.CheckCircle" /> <Strong>Success:</Strong> The operation completed successfully.
+                        </Alert>
+                        <Alert Color="Color.Warning" Visible Margin="Margin.Is2.FromBottom">
+                            <Icon Name="IconName.ExclamationTriangle" /> <Strong>Warning:</Strong> Please proceed with caution.
+                        </Alert>
+                        <Alert Color="Color.Danger" Visible Margin="Margin.Is2.FromBottom">
+                            <Icon Name="IconName.TimesCircle" /> <Strong>Error:</Strong> An error occurred in the operation.
+                        </Alert>
+                        <Alert Color="Color.Info" Visible Dismissible Margin="Margin.Is2.FromBottom">
+                            <Icon Name="IconName.Bell" /> This alert can be closed by clicking the X.
+                        </Alert>
+                    </CardBody>
+                </Card>
+
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Toast/Snackbar</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Paragraph>Click the buttons to show notifications:</Paragraph>
+                        <Buttons>
+                            <Button Color="Color.Success" Clicked="ShowSuccessToast">Success Toast</Button>
+                            <Button Color="Color.Danger" Clicked="ShowErrorToast">Error Toast</Button>
+                            <Button Color="Color.Info" Clicked="ShowInfoToast">Info Toast</Button>
+                        </Buttons>
+                    </CardBody>
+                </Card>
+            </TabPanel>
+
+            <!-- MODALS -->
+            <TabPanel Name="modals">
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Modals and Dialogs</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Buttons>
+                            <Button Color="Color.Primary" Clicked="ShowSimpleModal">Simple Modal</Button>
+                            <Button Color="Color.Info" Clicked="ShowCenteredModal">Centered Modal</Button>
+                            <Button Color="Color.Success" Clicked="ShowFormModal">Modal with Form</Button>
+                        </Buttons>
+                    </CardBody>
+                </Card>
+            </TabPanel>
+
+            <!-- CARDS -->
+            <TabPanel Name="cards">
+                <Row>
+                    <Column ColumnSize="ColumnSize.Is12.Is6.OnTablet.Is4.OnDesktop">
+                        <Card Margin="Margin.Is3.FromBottom">
+                            <CardImage Source="https://via.placeholder.com/400x200" Alt="Placeholder" />
+                            <CardBody>
+                                <CardTitle Size="5">Card with Image</CardTitle>
+                                <CardText>
+                                    This is an example of a card with an image at the top.
+                                </CardText>
+                                <Button Color="Color.Primary">View more</Button>
+                            </CardBody>
+                        </Card>
+                    </Column>
+                    <Column ColumnSize="ColumnSize.Is12.Is6.OnTablet.Is4.OnDesktop">
+                        <Card Margin="Margin.Is3.FromBottom">
+                            <CardHeader>
+                                <CardTitle Size="5">Card with Header</CardTitle>
+                            </CardHeader>
+                            <CardBody>
+                                <CardText>
+                                    Card with custom header and content.
+                                </CardText>
+                            </CardBody>
+                            <CardFooter>
+                                <Button Color="Color.Secondary" Size="Size.Small">Cancel</Button>
+                                <Button Color="Color.Primary" Size="Size.Small">Accept</Button>
+                            </CardFooter>
+                        </Card>
+                    </Column>
+                    <Column ColumnSize="ColumnSize.Is12.Is6.OnTablet.Is4.OnDesktop">
+                        <Card Background="Background.Primary" Margin="Margin.Is3.FromBottom">
+                            <CardBody>
+                                <CardTitle Size="5" TextColor="TextColor.White">Colored Card</CardTitle>
+                                <CardText TextColor="TextColor.White50">
+                                    Card with custom background color.
+                                </CardText>
+                            </CardBody>
+                        </Card>
+                    </Column>
+                </Row>
+            </TabPanel>
+
+            <!-- BADGES & TAGS -->
+            <TabPanel Name="badges">
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Badges</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Div Margin="Margin.Is2.FromBottom">
+                            <Badge Color="Color.Primary">Primary</Badge>
+                            <Badge Color="Color.Secondary">Secondary</Badge>
+                            <Badge Color="Color.Success">Success</Badge>
+                            <Badge Color="Color.Danger">Danger</Badge>
+                            <Badge Color="Color.Warning">Warning</Badge>
+                            <Badge Color="Color.Info">Info</Badge>
+                            <Badge Color="Color.Light">Light</Badge>
+                            <Badge Color="Color.Dark">Dark</Badge>
+                        </Div>
+                        <Div Margin="Margin.Is2.FromBottom">
+                            <Badge Color="Color.Primary" Pill>Pill Badge</Badge>
+                            <Badge Color="Color.Success" Pill>New</Badge>
+                            <Badge Color="Color.Danger" Pill>Overdue</Badge>
+                        </Div>
+                    </CardBody>
+                </Card>
+
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Badges with Icons</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Badge Color="Color.Success"><Icon Name="IconName.CheckCircle" /> Active</Badge>
+                        <Badge Color="Color.Danger"><Icon Name="IconName.TimesCircle" /> Inactive</Badge>
+                        <Badge Color="Color.Warning"><Icon Name="IconName.Clock" /> Pending</Badge>
+                        <Badge Color="Color.Info"><Icon Name="IconName.InfoCircle" /> Information</Badge>
+                    </CardBody>
+                </Card>
+            </TabPanel>
+
+            <!-- PROGRESS -->
+            <TabPanel Name="progress">
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Progress Bars</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Field>
+                            <FieldLabel>Progress: 25%</FieldLabel>
+                            <Progress Value="25" />
+                        </Field>
+                        <Field>
+                            <FieldLabel>Progress: 50%</FieldLabel>
+                            <Progress Value="50" Color="Color.Success" />
+                        </Field>
+                        <Field>
+                            <FieldLabel>Progress: 75%</FieldLabel>
+                            <Progress Value="75" Color="Color.Warning" />
+                        </Field>
+                        <Field>
+                            <FieldLabel>Progress: 100%</FieldLabel>
+                            <Progress Value="100" Color="Color.Danger" />
+                        </Field>
+                        <Field>
+                            <FieldLabel>Striped Progress</FieldLabel>
+                            <Progress Value="60" Striped Animated />
+                        </Field>
+                    </CardBody>
+                </Card>
+
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Spinners</CardTitle>
+                    </CardHeader>
+                    <CardBody Display="Display.Flex" Style="align-items: center;" Gap="Gap.Is3">
+                        <Div>
+                            <Icon Name="IconName.Sync" IconSize="IconSize.x2" />
+                        </Div>
+                        <Div>
+                            <Badge Color="Color.Primary">Loading...</Badge>
+                        </Div>
+                    </CardBody>
+                </Card>
+            </TabPanel>
+
+            <!-- OTHER -->
+            <TabPanel Name="other">
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Accordion</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Accordion>
+                            <Collapse Visible="@collapse1Visible">
+                                <CollapseHeader>
+                                    <Button Color="Color.Link" Clicked="@(() => collapse1Visible = !collapse1Visible)">
+                                        <Icon Name="@(collapse1Visible ? IconName.ChevronUp : IconName.ChevronDown)" />
+                                        Section 1
+                                    </Button>
+                                </CollapseHeader>
+                                <CollapseBody>
+                                    Content of the first accordion section. Any HTML content can go here.
+                                </CollapseBody>
+                            </Collapse>
+                            <Collapse Visible="@collapse2Visible">
+                                <CollapseHeader>
+                                    <Button Color="Color.Link" Clicked="@(() => collapse2Visible = !collapse2Visible)">
+                                        <Icon Name="@(collapse2Visible ? IconName.ChevronUp : IconName.ChevronDown)" />
+                                        Section 2
+                                    </Button>
+                                </CollapseHeader>
+                                <CollapseBody>
+                                    Content of the second section. Accordions are useful for organizing long content.
+                                </CollapseBody>
+                            </Collapse>
+                        </Accordion>
+                    </CardBody>
+                </Card>
+
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Breadcrumbs</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Breadcrumb>
+                            <BreadcrumbItem>
+                                <BreadcrumbLink To="#">Home</BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbItem>
+                                <BreadcrumbLink To="#">Components</BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbItem Active>
+                                <BreadcrumbLink>Showcase</BreadcrumbLink>
+                            </BreadcrumbItem>
+                        </Breadcrumb>
+                    </CardBody>
+                </Card>
+
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Dividers</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Paragraph>Content before divider</Paragraph>
+                        <Divider />
+                        <Paragraph>Content after divider</Paragraph>
+                        <Divider DividerType="DividerType.Dashed" />
+                        <Paragraph>Dashed divider style</Paragraph>
+                    </CardBody>
+                </Card>
+
+                <Card Margin="Margin.Is3.FromBottom">
+                    <CardHeader>
+                        <CardTitle Size="5">Icons</CardTitle>
+                    </CardHeader>
+                    <CardBody>
+                        <Div Display="Display.Flex" Style="align-items: center;" Gap="Gap.Is3" Flex="Flex.Wrap">
+                            <Icon Name="IconName.Home" IconSize="IconSize.x2" />
+                            <Icon Name="IconName.User" IconSize="IconSize.x2" />
+                            <Icon Name="IconName.Settings" IconSize="IconSize.x2" />
+                            <Icon Name="IconName.Search" IconSize="IconSize.x2" />
+                            <Icon Name="IconName.Bell" IconSize="IconSize.x2" />
+                            <Icon Name="IconName.Heart" IconSize="IconSize.x2" />
+                            <Icon Name="IconName.Star" IconSize="IconSize.x2" />
+                            <Icon Name="IconName.Mail" IconSize="IconSize.x2" />
+                            <Icon Name="IconName.Phone" IconSize="IconSize.x2" />
+                            <Icon Name="IconName.Camera" IconSize="IconSize.x2" />
+                        </Div>
+                    </CardBody>
+                </Card>
+            </TabPanel>
+        </Content>
+    </Tabs>
+
+    <!-- Modals -->
+    <Modal @ref="simpleModal">
+        <ModalContent Centered>
+            <ModalHeader>
+                <ModalTitle>Simple Modal</ModalTitle>
+                <CloseButton />
+            </ModalHeader>
+            <ModalBody>
+                <Paragraph>This is a simple modal with basic content.</Paragraph>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="CloseSimpleModal">Close</Button>
+                <Button Color="Color.Primary" Clicked="CloseSimpleModal">Accept</Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+
+    <Modal @ref="centeredModal">
+        <ModalContent Centered Size="ModalSize.Large">
+            <ModalHeader>
+                <ModalTitle>Large Centered Modal</ModalTitle>
+                <CloseButton />
+            </ModalHeader>
+            <ModalBody>
+                <Paragraph>This is a large centered modal.</Paragraph>
+                <Alert Color="Color.Info" Visible>
+                    Modals can contain any Blazorise component.
+                </Alert>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="CloseCenteredModal">Close</Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+
+    <Modal @ref="formModal">
+        <ModalContent Centered>
+            <ModalHeader>
+                <ModalTitle>Modal with Form</ModalTitle>
+                <CloseButton />
+            </ModalHeader>
+            <ModalBody>
+                <Field>
+                    <FieldLabel>Name</FieldLabel>
+                    <TextEdit @bind-Text="modalName" Placeholder="Enter your name" />
+                </Field>
+                <Field>
+                    <FieldLabel>Email</FieldLabel>
+                    <TextEdit @bind-Text="modalEmail" Role="TextRole.Email" Placeholder="email@example.com" />
+                </Field>
+                <Field>
+                    <FieldLabel>Message</FieldLabel>
+                    <MemoEdit @bind-Text="modalMessage" Rows="3" Placeholder="Write your message..." />
+                </Field>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="CloseFormModal">Cancel</Button>
+                <Button Color="Color.Primary" Clicked="SaveFormModal">Save</Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+
+    <!-- Floating notification -->
+    @if (!string.IsNullOrEmpty(snackbarMessage))
+    {
+        <Div Style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;">
+            <Alert Color="@alertColor" Visible Dismissible>
+                @snackbarMessage
+            </Alert>
+        </Div>
+    }
+</Container>
+
+@code {
+    private string selectedTab = "buttons";
+
+    // Buttons
+    private bool isLoading = false;
+
+    // Forms
+    private string name = "";
+    private string email = "";
+    private string password = "";
+    private string description = "";
+    private string selectedCountry = "";
+    private bool acceptTerms = false;
+    private bool receiveNotifications = false;
+    private string gender = "M";
+    private int age = 25;
+    private decimal price = 99.99m;
+    private DateTime? birthDate = DateTime.Now.AddYears(-25);
+    private bool switchActive = false;
+
+    // Modals
+    private Modal? simpleModal;
+    private Modal? centeredModal;
+    private Modal? formModal;
+    private string modalName = "";
+    private string modalEmail = "";
+    private string modalMessage = "";
+
+    // Alert notification
+    private string snackbarMessage = "";
+    private Color alertColor = Color.Success;
+
+    // Accordion
+    private bool collapse1Visible = false;
+    private bool collapse2Visible = false;
+
+    private void OnSelectedTabChanged(string name)
+    {
+        selectedTab = name;
+    }
+
+    private async System.Threading.Tasks.Task SimulateLoad()
+    {
+        isLoading = true;
+        await System.Threading.Tasks.Task.Delay(2000);
+        isLoading = false;
+    }
+
+    private async System.Threading.Tasks.Task ShowSimpleModal()
+    {
+        if (simpleModal != null)
+            await simpleModal.Show();
+    }
+
+    private async System.Threading.Tasks.Task CloseSimpleModal()
+    {
+        if (simpleModal != null)
+            await simpleModal.Hide();
+    }
+
+    private async System.Threading.Tasks.Task ShowCenteredModal()
+    {
+        if (centeredModal != null)
+            await centeredModal.Show();
+    }
+
+    private async System.Threading.Tasks.Task CloseCenteredModal()
+    {
+        if (centeredModal != null)
+            await centeredModal.Hide();
+    }
+
+    private async System.Threading.Tasks.Task ShowFormModal()
+    {
+        if (formModal != null)
+            await formModal.Show();
+    }
+
+    private async System.Threading.Tasks.Task CloseFormModal()
+    {
+        if (formModal != null)
+            await formModal.Hide();
+    }
+
+    private async System.Threading.Tasks.Task SaveFormModal()
+    {
+        await CloseFormModal();
+        await ShowNotification($"Form saved: {modalName}", Color.Success);
+        modalName = "";
+        modalEmail = "";
+        modalMessage = "";
+    }
+
+    private async System.Threading.Tasks.Task ShowSuccessToast()
+    {
+        await ShowNotification("Operation completed successfully", Color.Success);
+    }
+
+    private async System.Threading.Tasks.Task ShowErrorToast()
+    {
+        await ShowNotification("Error: Operation could not be completed", Color.Danger);
+    }
+
+    private async System.Threading.Tasks.Task ShowInfoToast()
+    {
+        await ShowNotification("Information: This is an informational notification", Color.Info);
+    }
+
+    private async System.Threading.Tasks.Task ShowNotification(string message, Color color)
+    {
+        snackbarMessage = message;
+        alertColor = color;
+        StateHasChanged();
+
+        await System.Threading.Tasks.Task.Delay(3000);
+        snackbarMessage = "";
+        StateHasChanged();
+    }
+}

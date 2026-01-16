@@ -1,0 +1,385 @@
+@page "/tasks/new"
+@page "/tasks/edit/{Id:int}"
+@inject TaskService TaskService
+@inject NavigationManager Navigation
+
+<PageTitle>@(Id == 0 ? "New Task" : "Edit Task") - Blazorise POC</PageTitle>
+
+<Container Fluid>
+    <Row>
+        <Column ColumnSize="ColumnSize.Is12.Is8.OnTablet.Is6.OnDesktop" Margin="Margin.IsAuto">
+            <Card>
+                <CardHeader>
+                    <CardTitle Size="4">
+                        <Icon Name="@(Id == 0 ? IconName.Add : IconName.Edit)" />
+                        @(Id == 0 ? "New Task" : "Edit Task")
+                    </CardTitle>
+                </CardHeader>
+                <CardBody>
+                    @if (task == null)
+                    {
+                        <Div Display="Display.Flex" Style="justify-content: center;" Padding="Padding.Is3.OnAll">
+                            <Div TextAlignment="TextAlignment.Center">
+                                <Icon Name="IconName.Sync" IconSize="IconSize.x2" />
+                                <Paragraph>Loading...</Paragraph>
+                            </Div>
+                        </Div>
+                    }
+                    else
+                    {
+                        <Validations @ref="validations" Mode="ValidationMode.Manual">
+                            <Validation>
+                                <Field>
+                                    <FieldLabel>Title <Text TextColor="TextColor.Danger">*</Text></FieldLabel>
+                                    <FieldBody>
+                                        <TextEdit @bind-Text="task.Title" Placeholder="Enter task title">
+                                            <Feedback>
+                                                <ValidationError>Title is required (minimum 3 characters)</ValidationError>
+                                            </Feedback>
+                                        </TextEdit>
+                                    </FieldBody>
+                                    <FieldHelp>Brief and descriptive task title</FieldHelp>
+                                </Field>
+                            </Validation>
+
+                            <Validation>
+                                <Field>
+                                    <FieldLabel>Description</FieldLabel>
+                                    <FieldBody>
+                                        <MemoEdit @bind-Text="task.Description" Rows="4" Placeholder="Detailed task description" />
+                                    </FieldBody>
+                                </Field>
+                            </Validation>
+
+                            <Row>
+                                <Column ColumnSize="ColumnSize.Is12.Is6.OnTablet">
+                                    <Validation>
+                                        <Field>
+                                            <FieldLabel>Status <Text TextColor="TextColor.Danger">*</Text></FieldLabel>
+                                            <FieldBody>
+                                                <Select @bind-SelectedValue="selectedStatus">
+                                                    <SelectItem Value="@Blazorise_POC.Models.TaskStatus.Pending.ToString()">Pending</SelectItem>
+                                                    <SelectItem Value="@Blazorise_POC.Models.TaskStatus.InProgress.ToString()">In Progress</SelectItem>
+                                                    <SelectItem Value="@Blazorise_POC.Models.TaskStatus.Completed.ToString()">Completed</SelectItem>
+                                                </Select>
+                                                <Feedback>
+                                                    <ValidationError>Must select a status</ValidationError>
+                                                </Feedback>
+                                            </FieldBody>
+                                        </Field>
+                                    </Validation>
+                                </Column>
+
+                                <Column ColumnSize="ColumnSize.Is12.Is6.OnTablet">
+                                    <Validation>
+                                        <Field>
+                                            <FieldLabel>Priority <Text TextColor="TextColor.Danger">*</Text></FieldLabel>
+                                            <FieldBody>
+                                                <Select @bind-SelectedValue="selectedPriority">
+                                                    <SelectItem Value="@Blazorise_POC.Models.TaskPriority.Low.ToString()">
+                                                        <Icon Name="IconName.Flag" TextColor="TextColor.Success" /> Low
+                                                    </SelectItem>
+                                                    <SelectItem Value="@Blazorise_POC.Models.TaskPriority.Medium.ToString()">
+                                                        <Icon Name="IconName.Flag" TextColor="TextColor.Warning" /> Medium
+                                                    </SelectItem>
+                                                    <SelectItem Value="@Blazorise_POC.Models.TaskPriority.High.ToString()">
+                                                        <Icon Name="IconName.Flag" TextColor="TextColor.Danger" /> High
+                                                    </SelectItem>
+                                                </Select>
+                                                <Feedback>
+                                                    <ValidationError>Must select a priority</ValidationError>
+                                                </Feedback>
+                                            </FieldBody>
+                                        </Field>
+                                    </Validation>
+                                </Column>
+                            </Row>
+
+                            <Validation>
+                                <Field>
+                                    <FieldLabel>Due Date <Text TextColor="TextColor.Danger">*</Text></FieldLabel>
+                                    <FieldBody>
+                                        <DateEdit @bind-Date="dueDate" InputMode="DateInputMode.Date">
+                                            <Feedback>
+                                                <ValidationError>Must select a due date</ValidationError>
+                                            </Feedback>
+                                        </DateEdit>
+                                    </FieldBody>
+                                    <FieldHelp>
+                                        @if (dueDate.HasValue)
+                                        {
+                                            var daysRemaining = (dueDate.Value - DateTime.Now).Days;
+                                            @if (daysRemaining < 0)
+                                            {
+                                                <Badge Color="Color.Danger">
+                                                    <Icon Name="IconName.ExclamationTriangle" /> Overdue by @Math.Abs(daysRemaining) days
+                                                </Badge>
+                                            }
+                                            else if (daysRemaining == 0)
+                                            {
+                                                <Badge Color="Color.Warning">
+                                                    <Icon Name="IconName.Clock" /> Due today
+                                                </Badge>
+                                            }
+                                            else if (daysRemaining <= 3)
+                                            {
+                                                <Badge Color="Color.Warning">
+                                                    <Icon Name="IconName.Clock" /> Due in @daysRemaining days
+                                                </Badge>
+                                            }
+                                            else
+                                            {
+                                                <Badge Color="Color.Success">
+                                                    <Icon Name="IconName.CheckCircle" /> Due in @daysRemaining days
+                                                </Badge>
+                                            }
+                                        }
+                                    </FieldHelp>
+                                </Field>
+                            </Validation>
+
+                            <Field>
+                                <Check TValue="bool" @bind-Checked="task.Completed">
+                                    <ChildContent>
+                                        Mark as completed
+                                    </ChildContent>
+                                </Check>
+                                @if (task.Completed)
+                                {
+                                    <FieldHelp>
+                                        <Badge Color="Color.Success">
+                                            <Icon Name="IconName.CheckCircle" /> Task completed
+                                        </Badge>
+                                    </FieldHelp>
+                                }
+                            </Field>
+
+                            @if (!string.IsNullOrEmpty(errorMessage))
+                            {
+                                <Alert Color="Color.Danger" Visible>
+                                    <Icon Name="IconName.TimesCircle" /> @errorMessage
+                                </Alert>
+                            }
+
+                            <Divider />
+
+                            <!-- Task preview -->
+                            <Card Background="Background.Light" Margin="Margin.Is3.FromBottom">
+                                <CardHeader>
+                                    <CardTitle Size="6">Preview</CardTitle>
+                                </CardHeader>
+                                <CardBody>
+                                    <Div Margin="Margin.Is2.FromBottom">
+                                        <Badge Color="@GetStatusColor()">@selectedStatus</Badge>
+                                        <Badge Color="@GetPriorityColor()" Margin="Margin.Is1.FromStart">
+                                            <Icon Name="IconName.Flag" /> @selectedPriority
+                                        </Badge>
+                                    </Div>
+                                    <Heading Size="HeadingSize.Is5">
+                                        @if (task.Completed)
+                                        {
+                                            <del>@(string.IsNullOrWhiteSpace(task.Title) ? "No title" : task.Title)</del>
+                                        }
+                                        else
+                                        {
+                                            @(string.IsNullOrWhiteSpace(task.Title) ? "No title" : task.Title)
+                                        }
+                                    </Heading>
+                                    <Paragraph>
+                                        @(string.IsNullOrWhiteSpace(task.Description) ? "No description" : task.Description)
+                                    </Paragraph>
+                                </CardBody>
+                            </Card>
+
+                            <Field>
+                                <FieldBody>
+                                    <Buttons>
+                                        <Button Color="Color.Primary" Clicked="SaveTask" Loading="saving">
+                                            <Icon Name="IconName.Save" /> @(Id == 0 ? "Create Task" : "Save Changes")
+                                        </Button>
+                                        <Button Color="Color.Secondary" Clicked="Cancel">
+                                            <Icon Name="IconName.Times" /> Cancel
+                                        </Button>
+                                    </Buttons>
+                                </FieldBody>
+                            </Field>
+                        </Validations>
+                    }
+                </CardBody>
+            </Card>
+
+            @if (Id == 0)
+            {
+                <Card Margin="Margin.Is3.FromTop">
+                    <CardBody>
+                        <Heading Size="HeadingSize.Is6">
+                            <Icon Name="IconName.InfoCircle" /> Information
+                        </Heading>
+                        <UnorderedList>
+                            <UnorderedListItem>Fields marked with <Text TextColor="TextColor.Danger">*</Text> are required</UnorderedListItem>
+                            <UnorderedListItem>High Priority: Urgent tasks requiring immediate attention</UnorderedListItem>
+                            <UnorderedListItem>Medium Priority: Important but not urgent tasks</UnorderedListItem>
+                            <UnorderedListItem>Low Priority: Tasks that can wait</UnorderedListItem>
+                        </UnorderedList>
+                    </CardBody>
+                </Card>
+            }
+        </Column>
+    </Row>
+</Container>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Models.Task? task;
+    private Validations? validations;
+    private bool saving = false;
+    private string errorMessage = "";
+
+    private string selectedStatus = Blazorise_POC.Models.TaskStatus.Pending.ToString();
+    private string selectedPriority = Blazorise_POC.Models.TaskPriority.Medium.ToString();
+    private DateTime? dueDate = DateTime.Now.AddDays(7);
+
+    protected override void OnInitialized()
+    {
+        if (Id == 0)
+        {
+            // Create new task
+            task = new Models.Task
+            {
+                Title = "",
+                Description = "",
+                Status = Blazorise_POC.Models.TaskStatus.Pending,
+                Priority = Blazorise_POC.Models.TaskPriority.Medium,
+                DueDate = DateTime.Now.AddDays(7),
+                Completed = false
+            };
+
+            selectedStatus = Blazorise_POC.Models.TaskStatus.Pending.ToString();
+            selectedPriority = Blazorise_POC.Models.TaskPriority.Medium.ToString();
+            dueDate = DateTime.Now.AddDays(7);
+        }
+        else
+        {
+            // Load existing task
+            task = TaskService.GetById(Id);
+            if (task == null)
+            {
+                Navigation.NavigateTo("/tasks");
+            }
+            else
+            {
+                selectedStatus = task.Status.ToString();
+                selectedPriority = task.Priority.ToString();
+                dueDate = task.DueDate;
+            }
+        }
+    }
+
+    private async System.Threading.Tasks.Task SaveTask()
+    {
+        errorMessage = "";
+
+        if (task == null)
+            return;
+
+        // Manual validation
+        if (!await ValidateTask())
+        {
+            if (validations != null)
+            {
+                await validations.ValidateAll();
+            }
+            return;
+        }
+
+        saving = true;
+        StateHasChanged();
+
+        await System.Threading.Tasks.Task.Delay(300); // Simulate save
+
+        try
+        {
+            // Apply selector values
+            task.Status = Enum.Parse<Blazorise_POC.Models.TaskStatus>(selectedStatus);
+            task.Priority = Enum.Parse<Blazorise_POC.Models.TaskPriority>(selectedPriority);
+            task.DueDate = dueDate ?? DateTime.Now.AddDays(7);
+
+            if (Id == 0)
+            {
+                TaskService.Create(task);
+            }
+            else
+            {
+                TaskService.Update(task);
+            }
+
+            Navigation.NavigateTo("/tasks");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving task: {ex.Message}";
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private async Task<bool> ValidateTask()
+    {
+        var errors = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(task?.Title) || task.Title.Length < 3)
+        {
+            errors.Add("Title is required and must be at least 3 characters");
+        }
+
+        if (!dueDate.HasValue)
+        {
+            errors.Add("Must select a due date");
+        }
+
+        if (errors.Any())
+        {
+            errorMessage = string.Join(". ", errors);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/tasks");
+    }
+
+    private Color GetStatusColor()
+    {
+        if (Enum.TryParse<Models.TaskStatus>(selectedStatus, out var status))
+        {
+            return status switch
+            {
+                Blazorise_POC.Models.TaskStatus.Completed => Color.Success,
+                Blazorise_POC.Models.TaskStatus.InProgress => Color.Info,
+                _ => Color.Secondary
+            };
+        }
+        return Color.Secondary;
+    }
+
+    private Color GetPriorityColor()
+    {
+        if (Enum.TryParse<TaskPriority>(selectedPriority, out var priority))
+        {
+            return priority switch
+            {
+                Blazorise_POC.Models.TaskPriority.High => Color.Danger,
+                Blazorise_POC.Models.TaskPriority.Medium => Color.Warning,
+                _ => Color.Success
+            };
+        }
+        return Color.Secondary;
+    }
+}

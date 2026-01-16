@@ -1,0 +1,296 @@
+@page "/products"
+@inject ProductService ProductService
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+
+<PageTitle>Products - FluentUI POC</PageTitle>
+
+<FluentStack Orientation="Orientation.Vertical" Width="100%">
+    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Style="justify-content: space-between;">
+        <FluentLabel Typo="Typography.H3">Product Management</FluentLabel>
+        <FluentButton Appearance="Appearance.Accent" OnClick="CreateProduct">
+            New Product
+        </FluentButton>
+    </FluentStack>
+    <FluentDivider />
+
+    <!-- Search and filters -->
+    <FluentCard Style="margin-top: 20px;">
+        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" Style="gap: 10px;">
+            <FluentTextField @bind-Value="searchTerm" Placeholder="Search products..." Style="min-width: 300px;">
+            </FluentTextField>
+            <FluentButton Appearance="Appearance.Accent" OnClick="Search">Search</FluentButton>
+            <FluentButton Appearance="Appearance.Outline" OnClick="ClearSearch">Clear</FluentButton>
+        </FluentStack>
+    </FluentCard>
+
+    <!-- Column Filters -->
+    <FluentCard Style="margin-top: 20px;">
+        <FluentLabel Typo="Typography.Body" Style="margin-bottom: 10px; font-weight: bold;">Column Filters</FluentLabel>
+        <FluentGrid Spacing="2" Style="margin-bottom: 10px;">
+            <FluentGridItem xs="6" sm="4" md="2">
+                <FluentNumberField @bind-Value="filterID" Placeholder="Filter ID" Style="width: 100%;" />
+            </FluentGridItem>
+            <FluentGridItem xs="6" sm="4" md="2">
+                <FluentTextField @bind-Value="filterName" Placeholder="Filter Name" Immediate="true" @bind-Value:after="OnFilterChanged" Style="width: 100%;" />
+            </FluentGridItem>
+            <FluentGridItem xs="6" sm="4" md="2">
+                <FluentTextField @bind-Value="filterDescription" Placeholder="Filter Description" Immediate="true" @bind-Value:after="OnFilterChanged" Style="width: 100%;" />
+            </FluentGridItem>
+            <FluentGridItem xs="6" sm="4" md="2">
+                <FluentSelect @bind-Value="filterCategory" TOption="string" @bind-Value:after="OnFilterChanged" Style="width: 100%;">
+                    <FluentOption Value="" TOption="string">All Categories</FluentOption>
+                    @foreach (var category in GetCategories())
+                    {
+                        <FluentOption Value="@category" TOption="string">@category</FluentOption>
+                    }
+                </FluentSelect>
+            </FluentGridItem>
+            <FluentGridItem xs="6" sm="4" md="2">
+                <FluentStack Orientation="Orientation.Horizontal" Style="gap: 5px;">
+                    <FluentNumberField @bind-Value="filterPriceMin" Placeholder="Min Price" Step="0.01" Style="width: 100%;" />
+                    <FluentNumberField @bind-Value="filterPriceMax" Placeholder="Max Price" Step="0.01" Style="width: 100%;" />
+                </FluentStack>
+            </FluentGridItem>
+            <FluentGridItem xs="6" sm="4" md="2">
+                <FluentStack Orientation="Orientation.Horizontal" Style="gap: 5px;">
+                    <FluentNumberField @bind-Value="filterStockMin" Placeholder="Min Stock" Style="width: 100%;" />
+                    <FluentNumberField @bind-Value="filterStockMax" Placeholder="Max Stock" Style="width: 100%;" />
+                </FluentStack>
+            </FluentGridItem>
+        </FluentGrid>
+        <FluentButton Appearance="Appearance.Outline" OnClick="ClearColumnFilters">Clear Filters</FluentButton>
+    </FluentCard>
+
+    <!-- Products table -->
+    <FluentCard Style="margin-top: 20px;">
+        @if (paginatedProducts == null || !paginatedProducts.Any())
+        {
+            <FluentLabel>No products available.</FluentLabel>
+        }
+        else
+        {
+            <FluentDataGrid Items="@paginatedProducts.AsQueryable()" Style="width: 100%;">
+                <PropertyColumn Property="@(p => p.Id)" Title="ID" Sortable="true" />
+                <PropertyColumn Property="@(p => p.Name)" Title="Name" Sortable="true" />
+                <PropertyColumn Property="@(p => p.Description)" Title="Description" />
+                <PropertyColumn Property="@(p => p.Category)" Title="Category" Sortable="true" />
+                <PropertyColumn Property="@(p => p.Price)" Title="Price" Format="C2" Sortable="true" />
+                <PropertyColumn Property="@(p => p.Stock)" Title="Stock" Sortable="true" />
+                <PropertyColumn Property="@(p => p.CreationDate)" Title="Creation Date" Format="dd/MM/yyyy" Sortable="true" />
+                <TemplateColumn Title="Actions">
+                    <CellTemplate>
+                        <FluentStack Orientation="Orientation.Horizontal" Style="gap: 5px;">
+                            <FluentButton Appearance="Appearance.Lightweight" OnClick="@(() => EditProduct(context.Id))">
+                                Edit
+                            </FluentButton>
+                            <FluentButton Appearance="Appearance.Lightweight" OnClick="@(() => DeleteProduct(context))">
+                                Delete
+                            </FluentButton>
+                        </FluentStack>
+                    </CellTemplate>
+                </TemplateColumn>
+            </FluentDataGrid>
+
+            <!-- Pagination -->
+            <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Style="justify-content: space-between; margin-top: 20px;">
+                <FluentLabel>Showing @paginatedProducts.Count() of @filteredProducts.Count products</FluentLabel>
+                <FluentStack Orientation="Orientation.Horizontal" Style="gap: 10px;">
+                    <FluentButton Appearance="Appearance.Outline" Disabled="@(currentPage == 1)" OnClick="PreviousPage">
+                        Previous
+                    </FluentButton>
+                    <FluentLabel>Page @currentPage of @totalPages</FluentLabel>
+                    <FluentButton Appearance="Appearance.Outline" Disabled="@(currentPage == totalPages)" OnClick="NextPage">
+                        Next
+                    </FluentButton>
+                </FluentStack>
+            </FluentStack>
+        }
+    </FluentCard>
+</FluentStack>
+
+@code {
+    private List<Product> products = new();
+    private List<Product> filteredProducts = new();
+    private List<Product> paginatedProducts = new();
+    private string searchTerm = string.Empty;
+    private int currentPage = 1;
+    private int productsPerPage = 10;
+    private int totalPages => (int)Math.Ceiling((double)filteredProducts.Count / productsPerPage);
+
+    // Column filters
+    private int? filterID;
+    private string filterName = string.Empty;
+    private string filterDescription = string.Empty;
+    private string filterCategory = string.Empty;
+    private decimal? filterPriceMin;
+    private decimal? filterPriceMax;
+    private int? filterStockMin;
+    private int? filterStockMax;
+
+    protected override void OnInitialized()
+    {
+        LoadProducts();
+    }
+
+    private void LoadProducts()
+    {
+        products = ProductService.GetAll();
+        ApplyFilters();
+    }
+
+    private void Search()
+    {
+        currentPage = 1;
+        ApplyFilters();
+    }
+
+    private void ClearSearch()
+    {
+        searchTerm = string.Empty;
+        Search();
+    }
+
+    private void OnFilterChanged()
+    {
+        currentPage = 1;
+        ApplyFilters();
+    }
+
+    private void ClearColumnFilters()
+    {
+        filterID = null;
+        filterName = string.Empty;
+        filterDescription = string.Empty;
+        filterCategory = string.Empty;
+        filterPriceMin = null;
+        filterPriceMax = null;
+        filterStockMin = null;
+        filterStockMax = null;
+        OnFilterChanged();
+    }
+
+    private List<string> GetCategories()
+    {
+        return products.Select(p => p.Category).Distinct().OrderBy(c => c).ToList();
+    }
+
+    private void ApplyFilters()
+    {
+        // Start with all products
+        filteredProducts = products;
+
+        // Apply global search filter
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredProducts = filteredProducts.Where(p =>
+                p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                p.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                p.Category.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        // Apply column filters
+        if (filterID.HasValue)
+        {
+            filteredProducts = filteredProducts.Where(p => p.Id == filterID.Value).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterName))
+        {
+            filteredProducts = filteredProducts.Where(p =>
+                p.Name.Contains(filterName, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterDescription))
+        {
+            filteredProducts = filteredProducts.Where(p =>
+                p.Description.Contains(filterDescription, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterCategory))
+        {
+            filteredProducts = filteredProducts.Where(p =>
+                p.Category.Equals(filterCategory, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        if (filterPriceMin.HasValue)
+        {
+            filteredProducts = filteredProducts.Where(p => p.Price >= filterPriceMin.Value).ToList();
+        }
+
+        if (filterPriceMax.HasValue)
+        {
+            filteredProducts = filteredProducts.Where(p => p.Price <= filterPriceMax.Value).ToList();
+        }
+
+        if (filterStockMin.HasValue)
+        {
+            filteredProducts = filteredProducts.Where(p => p.Stock >= filterStockMin.Value).ToList();
+        }
+
+        if (filterStockMax.HasValue)
+        {
+            filteredProducts = filteredProducts.Where(p => p.Stock <= filterStockMax.Value).ToList();
+        }
+
+        UpdatePagination();
+    }
+
+    private void UpdatePagination()
+    {
+        paginatedProducts = filteredProducts
+            .Skip((currentPage - 1) * productsPerPage)
+            .Take(productsPerPage)
+            .ToList();
+    }
+
+    private void PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            UpdatePagination();
+        }
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < totalPages)
+        {
+            currentPage++;
+            UpdatePagination();
+        }
+    }
+
+    private void CreateProduct()
+    {
+        Navigation.NavigateTo("/products/new");
+    }
+
+    private void EditProduct(int id)
+    {
+        Navigation.NavigateTo($"/products/edit/{id}");
+    }
+
+    private async System.Threading.Tasks.Task DeleteProduct(Product product)
+    {
+        var dialog = await DialogService.ShowConfirmationAsync(
+            $"Are you sure you want to delete the product '{product.Name}'?",
+            "Confirm deletion",
+            "Delete",
+            "Cancel");
+
+        var result = await dialog.Result;
+
+        if (!result.Cancelled)
+        {
+            ProductService.Delete(product.Id);
+            LoadProducts();
+            await DialogService.ShowSuccessAsync("Product deleted successfully.");
+        }
+    }
+}

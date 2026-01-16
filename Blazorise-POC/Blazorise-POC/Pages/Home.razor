@@ -1,0 +1,199 @@
+@page "/"
+@inject StatisticsService StatisticsService
+@inject NavigationManager Navigation
+
+<PageTitle>Dashboard - Blazorise POC</PageTitle>
+
+<Container Fluid>
+    <Heading Size="HeadingSize.Is3" Margin="Margin.Is3.FromBottom">Dashboard</Heading>
+    <Divider />
+
+    <!-- Statistics Cards -->
+    <Row>
+        <Column ColumnSize="ColumnSize.Is12.Is6.OnTablet.Is3.OnDesktop">
+            <Card Margin="Margin.Is3.FromBottom">
+                <CardBody>
+                    <Div Display="Display.Flex" Style="justify-content: space-between; align-items: center;">
+                        <Div>
+                            <Paragraph TextColor="TextColor.Muted" Margin="Margin.Is0">Total Products</Paragraph>
+                            <Heading Size="HeadingSize.Is2" TextColor="TextColor.Primary" Margin="Margin.Is0">@StatisticsService.GetTotalProducts()</Heading>
+                        </Div>
+                        <Icon Name="IconName.Archive" IconSize="IconSize.x3" TextColor="TextColor.Primary" />
+                    </Div>
+                    <Button Color="Color.Link" Size="Size.Small" Clicked="@(() => Navigation.NavigateTo("/products"))">View products</Button>
+                </CardBody>
+            </Card>
+        </Column>
+
+        <Column ColumnSize="ColumnSize.Is12.Is6.OnTablet.Is3.OnDesktop">
+            <Card Margin="Margin.Is3.FromBottom">
+                <CardBody>
+                    <Div Display="Display.Flex" Style="justify-content: space-between; align-items: center;">
+                        <Div>
+                            <Paragraph TextColor="TextColor.Muted" Margin="Margin.Is0">Inventory Value</Paragraph>
+                            <Heading Size="HeadingSize.Is2" TextColor="TextColor.Success" Margin="Margin.Is0">$@StatisticsService.GetTotalInventoryValue().ToString("N2")</Heading>
+                            <Small TextColor="TextColor.Muted">Total in stock</Small>
+                        </Div>
+                        <Icon Name="IconName.DollarSign" IconSize="IconSize.x3" TextColor="TextColor.Success" />
+                    </Div>
+                </CardBody>
+            </Card>
+        </Column>
+
+        <Column ColumnSize="ColumnSize.Is12.Is6.OnTablet.Is3.OnDesktop">
+            <Card Margin="Margin.Is3.FromBottom">
+                <CardBody>
+                    <Div Display="Display.Flex" Style="justify-content: space-between; align-items: center;">
+                        <Div>
+                            <Paragraph TextColor="TextColor.Muted" Margin="Margin.Is0">Low Stock</Paragraph>
+                            <Heading Size="HeadingSize.Is2" TextColor="TextColor.Warning" Margin="Margin.Is0">@StatisticsService.GetLowStockProducts()</Heading>
+                            <Small TextColor="TextColor.Muted">Less than 20 units</Small>
+                        </Div>
+                        <Icon Name="IconName.ExclamationTriangle" IconSize="IconSize.x3" TextColor="TextColor.Warning" />
+                    </Div>
+                </CardBody>
+            </Card>
+        </Column>
+
+        <Column ColumnSize="ColumnSize.Is12.Is6.OnTablet.Is3.OnDesktop">
+            <Card Margin="Margin.Is3.FromBottom">
+                <CardBody>
+                    <Div Display="Display.Flex" Style="justify-content: space-between; align-items: center;">
+                        <Div>
+                            <Paragraph TextColor="TextColor.Muted" Margin="Margin.Is0">Pending Tasks</Paragraph>
+                            <Heading Size="HeadingSize.Is2" TextColor="TextColor.Info" Margin="Margin.Is0">@StatisticsService.GetPendingTasks()</Heading>
+                        </Div>
+                        <Icon Name="IconName.List" IconSize="IconSize.x3" TextColor="TextColor.Info" />
+                    </Div>
+                    <Button Color="Color.Link" Size="Size.Small" Clicked="@(() => Navigation.NavigateTo("/tasks"))">View tasks</Button>
+                </CardBody>
+            </Card>
+        </Column>
+    </Row>
+
+    <!-- Charts and Statistics -->
+    <Row>
+        <Column ColumnSize="ColumnSize.Is12.Is6.OnTablet.Is4.OnDesktop">
+            <Card Margin="Margin.Is3.FromBottom">
+                <CardHeader>
+                    <CardTitle Size="5">Products by Category</CardTitle>
+                </CardHeader>
+                <CardBody>
+                    @foreach (var category in StatisticsService.GetProductsByCategory())
+                    {
+                        <Div Margin="Margin.Is2.FromBottom">
+                            <Div Display="Display.Flex" Style="justify-content: space-between; align-items: center;" Margin="Margin.Is1.FromBottom">
+                                <Text>@category.Key</Text>
+                                <Badge Color="Color.Primary">@category.Value</Badge>
+                            </Div>
+                            <Progress Value="@category.Value" Max="@StatisticsService.GetTotalProducts()" />
+                        </Div>
+                    }
+                </CardBody>
+            </Card>
+        </Column>
+
+        <Column ColumnSize="ColumnSize.Is12.Is6.OnTablet.Is4.OnDesktop">
+            <Card Margin="Margin.Is3.FromBottom">
+                <CardHeader>
+                    <CardTitle Size="5">Tasks by Status</CardTitle>
+                </CardHeader>
+                <CardBody>
+                    @foreach (var status in StatisticsService.GetTasksByStatus())
+                    {
+                        var color = status.Key switch
+                        {
+                            Blazorise_POC.Models.TaskStatus.Completed => Color.Success,
+                            Blazorise_POC.Models.TaskStatus.InProgress => Color.Info,
+                            _ => Color.Secondary
+                        };
+                        <Div Display="Display.Flex" Style="justify-content: space-between; align-items: center;" Margin="Margin.Is2.FromBottom">
+                            <Text>@GetStatusName(status.Key)</Text>
+                            <Badge Color="@color">@status.Value</Badge>
+                        </Div>
+                    }
+                </CardBody>
+            </Card>
+        </Column>
+
+        <Column ColumnSize="ColumnSize.Is12.Is6.OnTablet.Is4.OnDesktop">
+            <Card Margin="Margin.Is3.FromBottom">
+                <CardHeader>
+                    <CardTitle Size="5">Tasks by Priority</CardTitle>
+                </CardHeader>
+                <CardBody>
+                    @foreach (var priority in StatisticsService.GetTasksByPriority())
+                    {
+                        var color = priority.Key switch
+                        {
+                            Blazorise_POC.Models.TaskPriority.High => Color.Danger,
+                            Blazorise_POC.Models.TaskPriority.Medium => Color.Warning,
+                            _ => Color.Success
+                        };
+                        <Div Display="Display.Flex" Style="justify-content: space-between; align-items: center;" Margin="Margin.Is2.FromBottom">
+                            <Div Display="Display.Flex" Style="align-items: center;">
+                                <Icon Name="IconName.Flag" TextColor="@GetTextColor(priority.Key)" Margin="Margin.Is2.FromEnd" />
+                                <Text>@GetPriorityName(priority.Key)</Text>
+                            </Div>
+                            <Badge Color="@color">@priority.Value</Badge>
+                        </Div>
+                    }
+                </CardBody>
+            </Card>
+        </Column>
+    </Row>
+
+    <!-- Quick Actions -->
+    <Card>
+        <CardHeader>
+            <CardTitle Size="5">Quick Actions</CardTitle>
+        </CardHeader>
+        <CardBody>
+            <Buttons>
+                <Button Color="Color.Primary" Clicked="@(() => Navigation.NavigateTo("/products"))">
+                    <Icon Name="IconName.Archive" /> Manage Products
+                </Button>
+                <Button Color="Color.Primary" Clicked="@(() => Navigation.NavigateTo("/tasks"))">
+                    <Icon Name="IconName.List" /> Manage Tasks
+                </Button>
+                <Button Color="Color.Secondary" Clicked="@(() => Navigation.NavigateTo("/components"))">
+                    <Icon Name="IconName.List" /> View Components
+                </Button>
+            </Buttons>
+        </CardBody>
+    </Card>
+</Container>
+
+@code {
+    private TextColor GetTextColor(TaskPriority priority)
+    {
+        return priority switch
+        {
+            Blazorise_POC.Models.TaskPriority.High => TextColor.Danger,
+            Blazorise_POC.Models.TaskPriority.Medium => TextColor.Warning,
+            _ => TextColor.Success
+        };
+    }
+
+    private string GetStatusName(Blazorise_POC.Models.TaskStatus status)
+    {
+        return status switch
+        {
+            Blazorise_POC.Models.TaskStatus.Pending => "Pending",
+            Blazorise_POC.Models.TaskStatus.InProgress => "In Progress",
+            Blazorise_POC.Models.TaskStatus.Completed => "Completed",
+            _ => status.ToString()
+        };
+    }
+
+    private string GetPriorityName(Blazorise_POC.Models.TaskPriority priority)
+    {
+        return priority switch
+        {
+            Blazorise_POC.Models.TaskPriority.Low => "Low",
+            Blazorise_POC.Models.TaskPriority.Medium => "Medium",
+            Blazorise_POC.Models.TaskPriority.High => "High",
+            _ => priority.ToString()
+        };
+    }
+}

@@ -1,0 +1,55 @@
+@page "/counter"
+
+<PageTitle>Counter - Radzen POC</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn>
+            <RadzenText TextStyle="TextStyle.H4" TagName="TagName.H1">
+                <RadzenIcon Icon="add_circle" /> Counter
+            </RadzenText>
+            <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-color-secondary">Simple counter demonstration</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow JustifyContent="JustifyContent.Center">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard>
+                <RadzenStack Gap="1.5rem" AlignItems="AlignItems.Center" class="rz-text-align-center">
+                    <RadzenText TextStyle="TextStyle.H6">Current count</RadzenText>
+
+                    <RadzenText TextStyle="TextStyle.DisplayH1" class="rz-color-primary">@currentCount</RadzenText>
+
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                        <RadzenButton Icon="remove" Text="Decrement" ButtonStyle="ButtonStyle.Danger" Click="@DecrementCount" />
+                        <RadzenButton Icon="refresh" Text="Reset" ButtonStyle="ButtonStyle.Secondary" Click="@ResetCount" />
+                        <RadzenButton Icon="add" Text="Increment" ButtonStyle="ButtonStyle.Success" Click="@IncrementCount" />
+                    </RadzenStack>
+
+                    <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter">
+                        <RadzenIcon Icon="info" /> Click the buttons to change the counter value
+                    </RadzenAlert>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    private int currentCount = 0;
+
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+
+    private void DecrementCount()
+    {
+        currentCount--;
+    }
+
+    private void ResetCount()
+    {
+        currentCount = 0;
+    }
+}

@@ -1,0 +1,224 @@
+@page "/components"
+
+<PageTitle>Components - Radzen POC</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn>
+            <RadzenText TextStyle="TextStyle.H4" TagName="TagName.H1">
+                <RadzenIcon Icon="widgets" /> Components Showcase
+            </RadzenText>
+            <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-color-secondary">Examples of Radzen Blazor components</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn>
+            <RadzenTabs>
+                <Tabs>
+                    <!-- Buttons Tab -->
+                    <RadzenTabsItem Text="Buttons">
+                        <RadzenCard>
+                            <RadzenText TextStyle="TextStyle.H6" class="rz-mb-3">Button Styles</RadzenText>
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Wrap="FlexWrap.Wrap">
+                                <RadzenButton Text="Primary" ButtonStyle="ButtonStyle.Primary" />
+                                <RadzenButton Text="Secondary" ButtonStyle="ButtonStyle.Secondary" />
+                                <RadzenButton Text="Success" ButtonStyle="ButtonStyle.Success" />
+                                <RadzenButton Text="Info" ButtonStyle="ButtonStyle.Info" />
+                                <RadzenButton Text="Warning" ButtonStyle="ButtonStyle.Warning" />
+                                <RadzenButton Text="Danger" ButtonStyle="ButtonStyle.Danger" />
+                                <RadzenButton Text="Light" ButtonStyle="ButtonStyle.Light" />
+                                <RadzenButton Text="Dark" ButtonStyle="ButtonStyle.Dark" />
+                            </RadzenStack>
+
+                            <RadzenText TextStyle="TextStyle.H6" class="rz-mt-4 rz-mb-3">Button Sizes</RadzenText>
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                                <RadzenButton Text="Small" Size="ButtonSize.Small" />
+                                <RadzenButton Text="Medium" Size="ButtonSize.Medium" />
+                                <RadzenButton Text="Large" Size="ButtonSize.Large" />
+                            </RadzenStack>
+
+                            <RadzenText TextStyle="TextStyle.H6" class="rz-mt-4 rz-mb-3">Buttons with Icons</RadzenText>
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Wrap="FlexWrap.Wrap">
+                                <RadzenButton Icon="home" Text="Home" ButtonStyle="ButtonStyle.Primary" />
+                                <RadzenButton Icon="save" Text="Save" ButtonStyle="ButtonStyle.Success" />
+                                <RadzenButton Icon="delete" Text="Delete" ButtonStyle="ButtonStyle.Danger" />
+                                <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Secondary" />
+                            </RadzenStack>
+                        </RadzenCard>
+                    </RadzenTabsItem>
+
+                    <!-- Forms Tab -->
+                    <RadzenTabsItem Text="Forms">
+                        <RadzenCard>
+                            <RadzenText TextStyle="TextStyle.H6" class="rz-mb-3">Form Components</RadzenText>
+                            <RadzenStack Gap="1rem">
+                                <RadzenFormField Text="Text Input" Variant="Variant.Outlined">
+                                    <RadzenTextBox Placeholder="Enter text..." Style="width: 100%;" />
+                                </RadzenFormField>
+
+                                <RadzenFormField Text="Numeric Input" Variant="Variant.Outlined">
+                                    <RadzenNumeric Placeholder="Enter number..." TValue="int" Style="width: 100%;" />
+                                </RadzenFormField>
+
+                                <RadzenFormField Text="Dropdown" Variant="Variant.Outlined">
+                                    <RadzenDropDown TValue="string" Data="@(new[] { "Option 1", "Option 2", "Option 3" })" Placeholder="Select an option" Style="width: 100%;" />
+                                </RadzenFormField>
+
+                                <RadzenFormField Text="Date Picker" Variant="Variant.Outlined">
+                                    <RadzenDatePicker TValue="DateTime?" DateFormat="dd/MM/yyyy" Style="width: 100%;" />
+                                </RadzenFormField>
+
+                                <div>
+                                    <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-mb-2">Checkbox</RadzenText>
+                                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                                        <RadzenCheckBox TValue="bool" Name="checkbox1" />
+                                        <RadzenLabel Text="I agree to the terms and conditions" Component="checkbox1" />
+                                    </RadzenStack>
+                                </div>
+
+                                <div>
+                                    <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-mb-2">Switch</RadzenText>
+                                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                                        <RadzenSwitch Name="switch1" />
+                                        <RadzenLabel Text="Enable notifications" Component="switch1" />
+                                    </RadzenStack>
+                                </div>
+                            </RadzenStack>
+                        </RadzenCard>
+                    </RadzenTabsItem>
+
+                    <!-- Alerts & Notifications Tab -->
+                    <RadzenTabsItem Text="Alerts">
+                        <RadzenCard>
+                            <RadzenText TextStyle="TextStyle.H6" class="rz-mb-3">Alert Styles</RadzenText>
+                            <RadzenStack Gap="1rem">
+                                <RadzenAlert AlertStyle="AlertStyle.Primary" Variant="Variant.Flat">
+                                    <RadzenIcon Icon="info" /> This is a primary alert
+                                </RadzenAlert>
+                                <RadzenAlert AlertStyle="AlertStyle.Success" Variant="Variant.Flat">
+                                    <RadzenIcon Icon="check_circle" /> This is a success alert
+                                </RadzenAlert>
+                                <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat">
+                                    <RadzenIcon Icon="info" /> This is an info alert
+                                </RadzenAlert>
+                                <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat">
+                                    <RadzenIcon Icon="warning" /> This is a warning alert
+                                </RadzenAlert>
+                                <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat">
+                                    <RadzenIcon Icon="error" /> This is a danger alert
+                                </RadzenAlert>
+                            </RadzenStack>
+                        </RadzenCard>
+                    </RadzenTabsItem>
+
+                    <!-- Cards & Badges Tab -->
+                    <RadzenTabsItem Text="Cards & Badges">
+                        <RadzenCard>
+                            <RadzenText TextStyle="TextStyle.H6" class="rz-mb-3">Badge Styles</RadzenText>
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Wrap="FlexWrap.Wrap" class="rz-mb-4">
+                                <RadzenBadge Text="Primary" BadgeStyle="BadgeStyle.Primary" />
+                                <RadzenBadge Text="Secondary" BadgeStyle="BadgeStyle.Secondary" />
+                                <RadzenBadge Text="Success" BadgeStyle="BadgeStyle.Success" />
+                                <RadzenBadge Text="Info" BadgeStyle="BadgeStyle.Info" />
+                                <RadzenBadge Text="Warning" BadgeStyle="BadgeStyle.Warning" />
+                                <RadzenBadge Text="Danger" BadgeStyle="BadgeStyle.Danger" />
+                                <RadzenBadge Text="Light" BadgeStyle="BadgeStyle.Light" />
+                                <RadzenBadge Text="Dark" BadgeStyle="BadgeStyle.Dark" />
+                            </RadzenStack>
+
+                            <RadzenText TextStyle="TextStyle.H6" class="rz-mb-3">Pill Badges</RadzenText>
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Wrap="FlexWrap.Wrap">
+                                <RadzenBadge Text="Primary" BadgeStyle="BadgeStyle.Primary" IsPill="true" />
+                                <RadzenBadge Text="Success" BadgeStyle="BadgeStyle.Success" IsPill="true" />
+                                <RadzenBadge Text="Warning" BadgeStyle="BadgeStyle.Warning" IsPill="true" />
+                                <RadzenBadge Text="Danger" BadgeStyle="BadgeStyle.Danger" IsPill="true" />
+                            </RadzenStack>
+                        </RadzenCard>
+                    </RadzenTabsItem>
+
+                    <!-- Progress Tab -->
+                    <RadzenTabsItem Text="Progress">
+                        <RadzenCard>
+                            <RadzenText TextStyle="TextStyle.H6" class="rz-mb-3">Progress Bars</RadzenText>
+                            <RadzenStack Gap="1rem">
+                                <div>
+                                    <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-mb-2">25% Complete</RadzenText>
+                                    <RadzenProgressBar Value="25" Max="100" />
+                                </div>
+                                <div>
+                                    <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-mb-2">50% Complete</RadzenText>
+                                    <RadzenProgressBar Value="50" Max="100" />
+                                </div>
+                                <div>
+                                    <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-mb-2">75% Complete</RadzenText>
+                                    <RadzenProgressBar Value="75" Max="100" />
+                                </div>
+                                <div>
+                                    <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-mb-2">100% Complete</RadzenText>
+                                    <RadzenProgressBar Value="100" Max="100" />
+                                </div>
+                            </RadzenStack>
+
+                            <RadzenText TextStyle="TextStyle.H6" class="rz-mt-4 rz-mb-3">Progress Bar Circle</RadzenText>
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem">
+                                <RadzenProgressBarCircular Value="25" Max="100">
+                                    <Template>25%</Template>
+                                </RadzenProgressBarCircular>
+                                <RadzenProgressBarCircular Value="50" Max="100">
+                                    <Template>50%</Template>
+                                </RadzenProgressBarCircular>
+                                <RadzenProgressBarCircular Value="75" Max="100">
+                                    <Template>75%</Template>
+                                </RadzenProgressBarCircular>
+                                <RadzenProgressBarCircular Value="100" Max="100">
+                                    <Template>100%</Template>
+                                </RadzenProgressBarCircular>
+                            </RadzenStack>
+                        </RadzenCard>
+                    </RadzenTabsItem>
+
+                    <!-- Other Components Tab -->
+                    <RadzenTabsItem Text="Other">
+                        <RadzenCard>
+                            <RadzenText TextStyle="TextStyle.H6" class="rz-mb-3">Accordion</RadzenText>
+                            <RadzenAccordion>
+                                <Items>
+                                    <RadzenAccordionItem Text="Accordion Item 1" Icon="expand_more">
+                                        Content for accordion item 1. This is expandable content.
+                                    </RadzenAccordionItem>
+                                    <RadzenAccordionItem Text="Accordion Item 2" Icon="expand_more">
+                                        Content for accordion item 2. Click to expand and collapse.
+                                    </RadzenAccordionItem>
+                                    <RadzenAccordionItem Text="Accordion Item 3" Icon="expand_more">
+                                        Content for accordion item 3. Great for organizing information.
+                                    </RadzenAccordionItem>
+                                </Items>
+                            </RadzenAccordion>
+
+                            <RadzenText TextStyle="TextStyle.H6" class="rz-mt-4 rz-mb-3">Rating</RadzenText>
+                            <RadzenRating />
+
+                            <RadzenText TextStyle="TextStyle.H6" class="rz-mt-4 rz-mb-3">Breadcrumb</RadzenText>
+                            <RadzenBreadCrumb>
+                                <RadzenBreadCrumbItem Path="/" Text="Home" Icon="home" />
+                                <RadzenBreadCrumbItem Path="/products" Text="Products" Icon="inventory_2" />
+                                <RadzenBreadCrumbItem Text="Details" Icon="description" />
+                            </RadzenBreadCrumb>
+
+                            <RadzenText TextStyle="TextStyle.H6" class="rz-mt-4 rz-mb-3">Steps</RadzenText>
+                            <RadzenSteps>
+                                <Steps>
+                                    <RadzenStepsItem Text="Step 1" />
+                                    <RadzenStepsItem Text="Step 2" />
+                                    <RadzenStepsItem Text="Step 3" />
+                                    <RadzenStepsItem Text="Step 4" />
+                                </Steps>
+                            </RadzenSteps>
+                        </RadzenCard>
+                    </RadzenTabsItem>
+                </Tabs>
+            </RadzenTabs>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>

@@ -1,0 +1,185 @@
+@page "/tasks"
+@inject Services.TaskService TaskService
+@inject NavigationManager Navigation
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Tasks - Radzen POC</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn>
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                <RadzenStack Gap="0.5rem">
+                    <RadzenText TextStyle="TextStyle.H4" TagName="TagName.H1">
+                        <RadzenIcon Icon="task_alt" /> Tasks
+                    </RadzenText>
+                    <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-color-secondary">Task and activity management</RadzenText>
+                </RadzenStack>
+                <RadzenButton Click="@NewTask" Icon="add" Text="New Task" ButtonStyle="ButtonStyle.Success" />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn>
+            <RadzenCard>
+                <RadzenDataGrid @ref="tasksGrid" Data="@tasks" TItem="Models.Task"
+                               AllowFiltering="true" AllowSorting="true" AllowPaging="true"
+                               PageSize="10" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                               FilterMode="FilterMode.Advanced" LogicalFilterOperator="LogicalFilterOperator.Or">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="Models.Task" Title="" Width="60px" Filterable="false" Sortable="false" TextAlign="TextAlign.Center">
+                            <Template Context="task">
+                                <RadzenCheckBox TValue="bool" Value="@task.Completed" Change="@(async (bool value) => await ToggleCompleted(task.Id))" />
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="Models.Task" Property="Title" Title="Title">
+                            <Template Context="task">
+                                <RadzenText TextStyle="TextStyle.Subtitle2" Style="@(task.Completed ? "text-decoration: line-through; opacity: 0.6;" : "")">
+                                    @task.Title
+                                </RadzenText>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="Models.Task" Property="Description" Title="Description" Filterable="true" Sortable="false">
+                            <Template Context="task">
+                                <RadzenText TextStyle="TextStyle.Caption" class="rz-color-secondary">
+                                    @(task.Description.Length > 50 ? task.Description.Substring(0, 50) + "..." : task.Description)
+                                </RadzenText>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="Models.Task" Property="Status" Title="Status" Width="140px">
+                            <Template Context="task">
+                                @{
+                                    var badgeStyle = task.Status switch
+                                    {
+                                        Models.TaskStatus.Pending => BadgeStyle.Warning,
+                                        Models.TaskStatus.InProgress => BadgeStyle.Info,
+                                        Models.TaskStatus.Completed => BadgeStyle.Success,
+                                        _ => BadgeStyle.Secondary
+                                    };
+                                    var statusText = task.Status switch
+                                    {
+                                        Models.TaskStatus.Pending => "Pending",
+                                        Models.TaskStatus.InProgress => "In Progress",
+                                        Models.TaskStatus.Completed => "Completed",
+                                        _ => task.Status.ToString()
+                                    };
+                                }
+                                <RadzenBadge Text="@statusText" BadgeStyle="@badgeStyle" />
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="Models.Task" Property="Priority" Title="Priority" Width="120px">
+                            <Template Context="task">
+                                @{
+                                    var badgeStyle = task.Priority switch
+                                    {
+                                        Models.TaskPriority.High => BadgeStyle.Danger,
+                                        Models.TaskPriority.Medium => BadgeStyle.Warning,
+                                        Models.TaskPriority.Low => BadgeStyle.Success,
+                                        _ => BadgeStyle.Secondary
+                                    };
+                                    var icon = task.Priority switch
+                                    {
+                                        Models.TaskPriority.High => "arrow_upward",
+                                        Models.TaskPriority.Medium => "remove",
+                                        Models.TaskPriority.Low => "arrow_downward",
+                                        _ => "remove"
+                                    };
+                                }
+                                <RadzenBadge BadgeStyle="@badgeStyle">
+                                    <ChildContent>
+                                        <RadzenIcon Icon="@icon" style="font-size: 0.8rem;" /> @task.Priority.ToString()
+                                    </ChildContent>
+                                </RadzenBadge>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="Models.Task" Property="DueDate" Title="Due Date" Width="150px" FormatString="{0:dd/MM/yyyy}">
+                            <Template Context="task">
+                                @{
+                                    var isOverdue = !task.Completed && task.DueDate < DateTime.Now;
+                                }
+                                <RadzenText TextStyle="TextStyle.Caption" class="@(isOverdue ? "rz-color-danger" : "rz-color-secondary")">
+                                    @if (isOverdue)
+                                    {
+                                        <RadzenIcon Icon="warning" style="font-size: 0.8rem;" />
+                                    }
+                                    @task.DueDate.ToString("dd/MM/yyyy")
+                                </RadzenText>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="Models.Task" Title="Actions" Width="120px" Filterable="false" Sortable="false" TextAlign="TextAlign.Center">
+                            <Template Context="task">
+                                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" JustifyContent="JustifyContent.Center">
+                                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="@(() => EditTask(task.Id))" />
+                                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(() => DeleteTask(task.Id))" />
+                                </RadzenStack>
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    private RadzenDataGrid<Models.Task>? tasksGrid;
+    private List<Models.Task> tasks = new();
+
+    protected override void OnInitialized()
+    {
+        LoadTasks();
+    }
+
+    private void LoadTasks()
+    {
+        tasks = TaskService.GetAll();
+    }
+
+    private async System.Threading.Tasks.Task ToggleCompleted(int id)
+    {
+        TaskService.ToggleCompleted(id);
+        LoadTasks();
+        await tasksGrid!.Reload();
+    }
+
+    private void NewTask()
+    {
+        Navigation.NavigateTo("/tasks/new");
+    }
+
+    private void EditTask(int id)
+    {
+        Navigation.NavigateTo($"/tasks/edit/{id}");
+    }
+
+    private async System.Threading.Tasks.Task DeleteTask(int id)
+    {
+        var result = await DialogService.Confirm("Are you sure you want to delete this task?", "Delete Task",
+            new ConfirmOptions { OkButtonText = "Delete", CancelButtonText = "Cancel" });
+
+        if (result == true)
+        {
+            var success = TaskService.Delete(id);
+            if (success)
+            {
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Task Deleted",
+                    Detail = "The task has been successfully deleted.",
+                    Duration = 4000
+                });
+                LoadTasks();
+                await tasksGrid!.Reload();
+            }
+        }
+    }
+}

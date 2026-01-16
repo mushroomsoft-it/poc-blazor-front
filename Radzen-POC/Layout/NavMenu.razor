@@ -1,0 +1,29 @@
+<RadzenPanelMenu>
+    <RadzenPanelMenuItem Text="Dashboard" Icon="home" Path="/" />
+
+    <RadzenPanelMenuItem Text="MANAGEMENT" Icon="folder" Expanded="true">
+        <RadzenPanelMenuItem Text="Products" Icon="inventory_2" Path="products" />
+        <RadzenPanelMenuItem Text="Tasks" Icon="task_alt" Path="tasks" />
+    </RadzenPanelMenuItem>
+
+    <RadzenPanelMenuItem Text="SHOWCASE" Icon="palette" Expanded="true">
+        <RadzenPanelMenuItem Text="Components" Icon="widgets" Path="components" />
+        <RadzenPanelMenuItem Text="Counter" Icon="add_circle" Path="counter" />
+        <RadzenPanelMenuItem Text="Weather" Icon="cloud" Path="weather" />
+    </RadzenPanelMenuItem>
+
+    <RadzenPanelMenuItem Text="RESOURCES" Icon="link">
+        <ChildContent>
+            <RadzenPanelMenuItem Text="Radzen Docs" Icon="launch">
+                <Template>
+                    <a href="https://blazor.radzen.com/" target="_blank" class="rz-navigation-item-link">
+                        <span class="rz-navigation-item-icon">
+                            <RadzenIcon Icon="launch" />
+                        </span>
+                        <span class="rz-navigation-item-text">Radzen Docs</span>
+                    </a>
+                </Template>
+            </RadzenPanelMenuItem>
+        </ChildContent>
+    </RadzenPanelMenuItem>
+</RadzenPanelMenu>

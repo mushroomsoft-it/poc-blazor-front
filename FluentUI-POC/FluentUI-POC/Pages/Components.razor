@@ -1,0 +1,249 @@
+@page "/components"
+@inject IDialogService DialogService
+@inject IToastService ToastService
+
+<PageTitle>Components - FluentUI POC</PageTitle>
+
+<FluentStack Orientation="Orientation.Vertical" Width="100%">
+    <FluentLabel Typo="Typography.H3">Fluent UI Components Showcase</FluentLabel>
+    <FluentDivider />
+
+    <!-- Tabs to organize components -->
+    <FluentTabs>
+        <FluentTab Label="Buttons">
+            <FluentCard Style="margin-top: 20px;">
+                <FluentStack Orientation="Orientation.Vertical" Style="gap: 20px;">
+                    <FluentLabel Typo="Typography.H5">Buttons</FluentLabel>
+                    <FluentStack Orientation="Orientation.Horizontal" Wrap="true" Style="gap: 10px;">
+                        <FluentButton Appearance="Appearance.Accent">Accent</FluentButton>
+                        <FluentButton Appearance="Appearance.Neutral">Neutral</FluentButton>
+                        <FluentButton Appearance="Appearance.Outline">Outline</FluentButton>
+                        <FluentButton Appearance="Appearance.Stealth">Stealth</FluentButton>
+                        <FluentButton Appearance="Appearance.Lightweight">Lightweight</FluentButton>
+                        <FluentButton Disabled="true">Disabled</FluentButton>
+                        <FluentButton Loading="true">Loading</FluentButton>
+                    </FluentStack>
+
+                    <FluentLabel Typo="Typography.H6">Buttons with Icons</FluentLabel>
+                    <FluentStack Orientation="Orientation.Horizontal" Wrap="true" Style="gap: 10px;">
+                        <FluentButton Appearance="Appearance.Accent">
+                            Save
+                        </FluentButton>
+                        <FluentButton Appearance="Appearance.Neutral">
+                            Delete
+                        </FluentButton>
+                        <FluentButton Appearance="Appearance.Outline">
+                            Edit
+                        </FluentButton>
+                    </FluentStack>
+                </FluentStack>
+            </FluentCard>
+        </FluentTab>
+
+        <FluentTab Label="Forms">
+            <FluentCard Style="margin-top: 20px;">
+                <FluentStack Orientation="Orientation.Vertical" Style="gap: 20px;">
+                    <FluentLabel Typo="Typography.H5">Form Fields</FluentLabel>
+
+                    <FluentTextField Label="Text" Placeholder="Enter text..." Style="width: 300px;" />
+
+                    <FluentTextArea @bind-Value="textArea" Label="Text Area" Placeholder="Enter description..." Rows="3" Style="width: 300px;" />
+
+                    <FluentNumberField @bind-Value="exampleNumber" TValue="int" Label="Number" Min="0" Max="100" Step="1" Style="width: 300px;" />
+
+                    <FluentSelect @bind-Value="selectedOption" TOption="string" Label="Selection" Style="width: 300px;">
+                        <FluentOption Value="">Select an option</FluentOption>
+                        <FluentOption Value="1">Option 1</FluentOption>
+                        <FluentOption Value="2">Option 2</FluentOption>
+                        <FluentOption Value="3">Option 3</FluentOption>
+                    </FluentSelect>
+
+                    <FluentDatePicker @bind-Value="exampleDate" Label="Date" Style="width: 300px;" />
+
+                    <FluentCheckbox Label="Checkbox" />
+
+                    <FluentStack Orientation="Orientation.Vertical">
+                        <FluentLabel>Radio Buttons</FluentLabel>
+                        <FluentRadioGroup @bind-Value="@radioValue">
+                            <FluentRadio Value="@("1")">Option 1</FluentRadio>
+                            <FluentRadio Value="@("2")">Option 2</FluentRadio>
+                            <FluentRadio Value="@("3")">Option 3</FluentRadio>
+                        </FluentRadioGroup>
+                    </FluentStack>
+
+                    <FluentSwitch Label="Switch" />
+
+                    <FluentSlider Min="0" Max="100" Step="1" Style="width: 300px;" />
+                </FluentStack>
+            </FluentCard>
+        </FluentTab>
+
+        <FluentTab Label="Alerts and Dialogs">
+            <FluentCard Style="margin-top: 20px;">
+                <FluentStack Orientation="Orientation.Vertical" Style="gap: 20px;">
+                    <FluentLabel Typo="Typography.H5">Messages and Dialogs</FluentLabel>
+
+                    <FluentLabel Typo="Typography.H6">Message Bar</FluentLabel>
+                    <FluentMessageBar Intent="MessageIntent.Info">Informative message</FluentMessageBar>
+                    <FluentMessageBar Intent="MessageIntent.Success">Successful operation</FluentMessageBar>
+                    <FluentMessageBar Intent="MessageIntent.Warning">Important warning</FluentMessageBar>
+                    <FluentMessageBar Intent="MessageIntent.Error">Error encountered</FluentMessageBar>
+
+                    <FluentLabel Typo="Typography.H6">Toasts (Notifications)</FluentLabel>
+                    <FluentStack Orientation="Orientation.Horizontal" Wrap="true" Style="gap: 10px;">
+                        <FluentButton OnClick="@(() => ToastService.ShowSuccess("Success"))" Appearance="Appearance.Accent">
+                            Toast Success
+                        </FluentButton>
+                        <FluentButton OnClick="@(() => ToastService.ShowInfo("Information"))" Appearance="Appearance.Neutral">
+                            Toast Info
+                        </FluentButton>
+                        <FluentButton OnClick="@(() => ToastService.ShowWarning("Warning"))" Appearance="Appearance.Outline">
+                            Toast Warning
+                        </FluentButton>
+                        <FluentButton OnClick="@(() => ToastService.ShowError("Error"))" Appearance="Appearance.Outline">
+                            Toast Error
+                        </FluentButton>
+                    </FluentStack>
+
+                    <FluentLabel Typo="Typography.H6">Dialogs</FluentLabel>
+                    <FluentStack Orientation="Orientation.Horizontal" Wrap="true" Style="gap: 10px;">
+                        <FluentButton OnClick="ShowSimpleDialog" Appearance="Appearance.Accent">
+                            Simple Dialog
+                        </FluentButton>
+                        <FluentButton OnClick="ShowConfirmationDialog" Appearance="Appearance.Neutral">
+                            Confirmation Dialog
+                        </FluentButton>
+                    </FluentStack>
+                </FluentStack>
+            </FluentCard>
+        </FluentTab>
+
+        <FluentTab Label="Cards and Badges">
+            <FluentCard Style="margin-top: 20px;">
+                <FluentStack Orientation="Orientation.Vertical" Style="gap: 20px;">
+                    <FluentLabel Typo="Typography.H5">Cards and Badges</FluentLabel>
+
+                    <FluentLabel Typo="Typography.H6">Cards</FluentLabel>
+                    <FluentStack Orientation="Orientation.Horizontal" Wrap="true" Style="gap: 20px;">
+                        <FluentCard Style="min-width: 250px;">
+                            <FluentStack Orientation="Orientation.Vertical">
+                                <FluentLabel Typo="Typography.H6">Simple Card</FluentLabel>
+                                <FluentLabel>Card content</FluentLabel>
+                                <FluentButton Appearance="Appearance.Accent">Action</FluentButton>
+                            </FluentStack>
+                        </FluentCard>
+
+                        <FluentCard Style="min-width: 250px;">
+                            <FluentStack Orientation="Orientation.Vertical">
+                                <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                                    <FluentLabel Typo="Typography.H6">Card with Icon</FluentLabel>
+                                </FluentStack>
+                                <FluentLabel>Important information</FluentLabel>
+                            </FluentStack>
+                        </FluentCard>
+                    </FluentStack>
+
+                    <FluentLabel Typo="Typography.H6">Badges</FluentLabel>
+                    <FluentStack Orientation="Orientation.Horizontal" Wrap="true" Style="gap: 10px;">
+                        <FluentBadge Appearance="Appearance.Accent">Accent</FluentBadge>
+                        <FluentBadge Appearance="Appearance.Neutral">Neutral</FluentBadge>
+                        <FluentBadge Appearance="Appearance.Accent" BackgroundColor="success" Color="success">Success</FluentBadge>
+                        <FluentBadge Appearance="Appearance.Accent" BackgroundColor="warning" Color="warning">Warning</FluentBadge>
+                        <FluentBadge Appearance="Appearance.Accent" BackgroundColor="error" Color="error">Error</FluentBadge>
+                    </FluentStack>
+                </FluentStack>
+            </FluentCard>
+        </FluentTab>
+
+        <FluentTab Label="Progress and Icons">
+            <FluentCard Style="margin-top: 20px;">
+                <FluentStack Orientation="Orientation.Vertical" Style="gap: 20px;">
+                    <FluentLabel Typo="Typography.H5">Progress Indicators and Icons</FluentLabel>
+
+                    <FluentLabel Typo="Typography.H6">Progress Bar</FluentLabel>
+                    <FluentProgress Value="25" Max="100" Style="width: 100%;" />
+                    <FluentProgress Value="50" Max="100" Style="width: 100%;" />
+                    <FluentProgress Value="75" Max="100" Style="width: 100%;" />
+                    <FluentProgress Style="width: 100%;" />
+
+                    <FluentLabel Typo="Typography.H6">Progress Ring</FluentLabel>
+                    <FluentStack Orientation="Orientation.Horizontal" Style="gap: 20px;">
+                        <FluentProgressRing />
+                        <FluentProgressRing Value="50" Max="100" />
+                    </FluentStack>
+
+                    <FluentLabel Typo="Typography.H6">Icons</FluentLabel>
+                    <FluentStack Orientation="Orientation.Horizontal" Wrap="true" Style="gap: 15px;">
+                    </FluentStack>
+                </FluentStack>
+            </FluentCard>
+        </FluentTab>
+
+        <FluentTab Label="Other">
+            <FluentCard Style="margin-top: 20px;">
+                <FluentStack Orientation="Orientation.Vertical" Style="gap: 20px;">
+                    <FluentLabel Typo="Typography.H5">Other Components</FluentLabel>
+
+                    <FluentLabel Typo="Typography.H6">Accordion</FluentLabel>
+                    <FluentAccordion>
+                        <FluentAccordionItem Heading="Section 1" Expanded="true">
+                            Content of section 1
+                        </FluentAccordionItem>
+                        <FluentAccordionItem Heading="Section 2">
+                            Content of section 2
+                        </FluentAccordionItem>
+                        <FluentAccordionItem Heading="Section 3">
+                            Content of section 3
+                        </FluentAccordionItem>
+                    </FluentAccordion>
+
+                    <FluentLabel Typo="Typography.H6">Divider</FluentLabel>
+                    <FluentDivider />
+                    <FluentDivider Style="border-color: var(--accent-fill-rest);" />
+
+                    <FluentLabel Typo="Typography.H6">Tooltip</FluentLabel>
+                    <FluentButton Appearance="Appearance.Accent" id="tooltip-target">
+                        Hover to see tooltip
+                    </FluentButton>
+                    <FluentTooltip Anchor="tooltip-target">
+                        This is an informative tooltip
+                    </FluentTooltip>
+
+                    <FluentLabel Typo="Typography.H6">Skeleton (Loading)</FluentLabel>
+                    <FluentSkeleton Style="width: 300px; height: 20px;" />
+                    <FluentSkeleton Style="width: 200px; height: 20px;" />
+                    <FluentSkeleton Shape="SkeletonShape.Circle" Style="width: 50px; height: 50px;" />
+                </FluentStack>
+            </FluentCard>
+        </FluentTab>
+    </FluentTabs>
+</FluentStack>
+
+@code {
+    private string radioValue = "1";
+    private string textArea = string.Empty;
+    private int exampleNumber = 0;
+    private string selectedOption = string.Empty;
+    private DateTime? exampleDate = DateTime.Now;
+
+    private async System.Threading.Tasks.Task ShowSimpleDialog()
+    {
+        await DialogService.ShowInfoAsync("This is a simple dialog with information.", "Information");
+    }
+
+    private async System.Threading.Tasks.Task ShowConfirmationDialog()
+    {
+        var dialog = await DialogService.ShowConfirmationAsync(
+            "Do you want to continue with this action?",
+            "Confirmation",
+            "Yes",
+            "No");
+
+        var result = await dialog.Result;
+
+        if (!result.Cancelled)
+        {
+            ToastService.ShowSuccess("Action confirmed");
+        }
+    }
+}

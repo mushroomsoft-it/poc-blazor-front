@@ -1,0 +1,326 @@
+@page "/products"
+@inject ProductService ProductService
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+
+<PageTitle>Products - MudBlazor POC</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">
+    <MudIcon Icon="@Icons.Material.Filled.Inventory" Class="mr-2" />
+    Products
+</MudText>
+
+<MudPaper Class="pa-4 mb-4" Elevation="2">
+    <MudGrid>
+        <MudItem xs="12" md="8">
+            <MudTextField @bind-Value="searchTerm"
+                          Label="Search products"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Immediate="true"
+                          OnDebounceIntervalElapsed="OnSearch"
+                          DebounceInterval="300" />
+        </MudItem>
+        <MudItem xs="12" md="4" Class="d-flex align-center">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       FullWidth="true"
+                       Href="/products/new">
+                New Product
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudPaper Class="pa-4 mb-4" Elevation="2">
+    <MudText Typo="Typo.h6" GutterBottom="true">
+        <MudIcon Icon="@Icons.Material.Filled.FilterList" Class="mr-2" />
+        Column Filters
+    </MudText>
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="4">
+            <MudTextField @bind-Value="filterName"
+                          @bind-Value:after="OnFilterChanged"
+                          Label="Filter by Name"
+                          Variant="Variant.Outlined"
+                          Immediate="true"
+                          Clearable="true" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudSelect @bind-Value="filterCategory"
+                       @bind-Value:after="OnFilterChanged"
+                       Label="Filter by Category"
+                       Variant="Variant.Outlined"
+                       T="string"
+                       Clearable="true">
+                @foreach (var category in GetCategories())
+                {
+                    <MudSelectItem Value="@category">@category</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudDatePicker @bind-Date="filterCreationDate"
+                           @bind-Date:after="OnFilterChanged"
+                           Label="Filter by Creation Date"
+                           Variant="Variant.Outlined"
+                           Clearable="true" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudNumericField @bind-Value="filterPriceMin"
+                             @bind-Value:after="OnFilterChanged"
+                             Label="Min Price"
+                             Variant="Variant.Outlined"
+                             T="decimal?"
+                             Min="0m"
+                             Step="0.01m"
+                             Format="N2"
+                             Immediate="true"
+                             Clearable="true" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudNumericField @bind-Value="filterPriceMax"
+                             @bind-Value:after="OnFilterChanged"
+                             Label="Max Price"
+                             Variant="Variant.Outlined"
+                             T="decimal?"
+                             Min="0m"
+                             Step="0.01m"
+                             Format="N2"
+                             Immediate="true"
+                             Clearable="true" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudNumericField @bind-Value="filterStockMin"
+                             @bind-Value:after="OnFilterChanged"
+                             Label="Min Stock"
+                             Variant="Variant.Outlined"
+                             T="int?"
+                             Min="0"
+                             Immediate="true"
+                             Clearable="true" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudNumericField @bind-Value="filterStockMax"
+                             @bind-Value:after="OnFilterChanged"
+                             Label="Max Stock"
+                             Variant="Variant.Outlined"
+                             T="int?"
+                             Min="0"
+                             Immediate="true"
+                             Clearable="true" />
+        </MudItem>
+        <MudItem xs="12" Class="d-flex justify-end">
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       StartIcon="@Icons.Material.Filled.Clear"
+                       OnClick="ClearColumnFilters">
+                Clear Filters
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudTable Items="@filteredProducts"
+          Hover="true"
+          Striped="true"
+          Dense="true"
+          Elevation="2">
+    <HeaderContent>
+        <MudTh>Name</MudTh>
+        <MudTh>Category</MudTh>
+        <MudTh>Price</MudTh>
+        <MudTh>Stock</MudTh>
+        <MudTh>Created</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Name">
+            <MudText Typo="Typo.body2"><strong>@context.Name</strong></MudText>
+            <MudText Typo="Typo.caption" Color="Color.Secondary">@context.Description</MudText>
+        </MudTd>
+        <MudTd DataLabel="Category">
+            <MudBadge Content="@context.Category" Color="Color.Primary" />
+        </MudTd>
+        <MudTd DataLabel="Price">
+            <MudText Typo="Typo.body2" Color="Color.Success"><strong>$@context.Price.ToString("N2")</strong></MudText>
+        </MudTd>
+        <MudTd DataLabel="Stock">
+            @if (context.Stock == 0)
+            {
+                <MudBadge Content="@("Out of Stock")" Color="Color.Error" />
+            }
+            else if (context.Stock < 10)
+            {
+                <MudBadge Content="@($"Low ({context.Stock})")" Color="Color.Warning" />
+            }
+            else
+            {
+                <MudBadge Content="@($"{context.Stock} units")" Color="Color.Success" />
+            }
+        </MudTd>
+        <MudTd DataLabel="Created">
+            <MudText Typo="Typo.caption">@context.CreationDate.ToString("MMM dd, yyyy")</MudText>
+        </MudTd>
+        <MudTd DataLabel="Actions">
+            <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               OnClick="@(() => EditProduct(context.Id))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                               Color="Color.Error"
+                               Size="Size.Small"
+                               OnClick="@(() => DeleteProduct(context))" />
+            </MudButtonGroup>
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@if (!filteredProducts.Any())
+{
+    <MudPaper Class="pa-8 mt-4 text-center" Elevation="0">
+        <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Secondary" />
+        <MudText Typo="Typo.h6" Color="Color.Secondary">No products found</MudText>
+        @if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Try a different search term</MudText>
+        }
+    </MudPaper>
+}
+
+@code {
+    private List<Product> products = new();
+    private List<Product> filteredProducts = new();
+    private string searchTerm = string.Empty;
+
+    // Column filter variables
+    private string filterName = string.Empty;
+    private string filterCategory = string.Empty;
+    private decimal? filterPriceMin;
+    private decimal? filterPriceMax;
+    private int? filterStockMin;
+    private int? filterStockMax;
+    private DateTime? filterCreationDate;
+
+    protected override void OnInitialized()
+    {
+        LoadProducts();
+    }
+
+    private void LoadProducts()
+    {
+        products = ProductService.GetAll();
+        ApplyFilters();
+    }
+
+    private void OnSearch()
+    {
+        ApplyFilters();
+    }
+
+    private void OnFilterChanged()
+    {
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        // Start with all products
+        filteredProducts = products;
+
+        // Apply global search filter
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredProducts = filteredProducts.Where(p =>
+                p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                p.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                p.Category.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        // Apply column filters
+        if (!string.IsNullOrWhiteSpace(filterName))
+        {
+            filteredProducts = filteredProducts.Where(p =>
+                p.Name.Contains(filterName, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterCategory))
+        {
+            filteredProducts = filteredProducts.Where(p =>
+                p.Category.Equals(filterCategory, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        if (filterPriceMin.HasValue)
+        {
+            filteredProducts = filteredProducts.Where(p => p.Price >= filterPriceMin.Value).ToList();
+        }
+
+        if (filterPriceMax.HasValue)
+        {
+            filteredProducts = filteredProducts.Where(p => p.Price <= filterPriceMax.Value).ToList();
+        }
+
+        if (filterStockMin.HasValue)
+        {
+            filteredProducts = filteredProducts.Where(p => p.Stock >= filterStockMin.Value).ToList();
+        }
+
+        if (filterStockMax.HasValue)
+        {
+            filteredProducts = filteredProducts.Where(p => p.Stock <= filterStockMax.Value).ToList();
+        }
+
+        if (filterCreationDate.HasValue)
+        {
+            filteredProducts = filteredProducts.Where(p =>
+                p.CreationDate.Date == filterCreationDate.Value.Date
+            ).ToList();
+        }
+    }
+
+    private void ClearColumnFilters()
+    {
+        filterName = string.Empty;
+        filterCategory = string.Empty;
+        filterPriceMin = null;
+        filterPriceMax = null;
+        filterStockMin = null;
+        filterStockMax = null;
+        filterCreationDate = null;
+        ApplyFilters();
+    }
+
+    private List<string> GetCategories()
+    {
+        return products.Select(p => p.Category).Distinct().OrderBy(c => c).ToList();
+    }
+
+    private void EditProduct(int id)
+    {
+        Navigation.NavigateTo($"/products/edit/{id}");
+    }
+
+    private async System.Threading.Tasks.Task DeleteProduct(Product product)
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            "Delete Product",
+            $"Are you sure you want to delete '{product.Name}'?",
+            yesText: "Delete",
+            cancelText: "Cancel");
+
+        if (result == true)
+        {
+            ProductService.Delete(product.Id);
+            LoadProducts();
+        }
+    }
+}

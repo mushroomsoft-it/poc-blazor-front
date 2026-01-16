@@ -1,0 +1,199 @@
+@page "/tasks/new"
+@page "/tasks/edit/{id:int}"
+@inject Services.TaskService TaskService
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+
+<PageTitle>@(Id == null ? "New Task" : "Edit Task") - Radzen POC</PageTitle>
+
+<RadzenRow JustifyContent="JustifyContent.Center">
+    <RadzenColumn Size="12" SizeLG="8">
+        <RadzenCard>
+            <RadzenStack Gap="1rem">
+                <RadzenText TextStyle="TextStyle.H5">
+                    <RadzenIcon Icon="@(Id == null ? "add" : "edit")" /> @(Id == null ? "New Task" : "Edit Task")
+                </RadzenText>
+
+                <EditForm Model="@task" OnValidSubmit="@HandleSubmit">
+                    <DataAnnotationsValidator />
+                    <RadzenStack Gap="1rem">
+                        <!-- Title -->
+                        <RadzenFormField Text="Title" Variant="Variant.Outlined">
+                            <ChildContent>
+                                <RadzenTextBox @bind-Value="task.Title" Placeholder="E.g: Review documentation" Style="width: 100%;" />
+                            </ChildContent>
+                            <Helper>
+                                <ValidationMessage For="@(() => task.Title)" />
+                            </Helper>
+                        </RadzenFormField>
+
+                        <!-- Description -->
+                        <RadzenFormField Text="Description" Variant="Variant.Outlined">
+                            <ChildContent>
+                                <RadzenTextArea @bind-Value="task.Description" Rows="4" Placeholder="Detailed task description" Style="width: 100%;" />
+                            </ChildContent>
+                            <Helper>
+                                <ValidationMessage For="@(() => task.Description)" />
+                            </Helper>
+                        </RadzenFormField>
+
+                        <!-- Status and Priority -->
+                        <RadzenRow Gap="1rem">
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField Text="Status" Variant="Variant.Outlined">
+                                    <ChildContent>
+                                        <RadzenDropDown @bind-Value="task.Status" Data="@statuses" Style="width: 100%;" />
+                                    </ChildContent>
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField Text="Priority" Variant="Variant.Outlined">
+                                    <ChildContent>
+                                        <RadzenDropDown @bind-Value="task.Priority" Data="@priorities" Style="width: 100%;" />
+                                    </ChildContent>
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        <!-- Due Date -->
+                        <RadzenFormField Text="Due Date" Variant="Variant.Outlined">
+                            <ChildContent>
+                                <RadzenDatePicker @bind-Value="task.DueDate" DateFormat="dd/MM/yyyy" Style="width: 100%;" />
+                            </ChildContent>
+                        </RadzenFormField>
+
+                        <!-- Completed -->
+                        <RadzenFormField Variant="Variant.Outlined">
+                            <ChildContent>
+                                <RadzenCheckBox @bind-Value="task.Completed" Name="completed" />
+                                <RadzenLabel Text="Mark as completed" Component="completed" Style="margin-left: 8px;" />
+                            </ChildContent>
+                        </RadzenFormField>
+
+                        <!-- Preview Card -->
+                        @if (!string.IsNullOrWhiteSpace(task.Title) || !string.IsNullOrWhiteSpace(task.Description))
+                        {
+                            var alertStyle = task.Priority switch
+                            {
+                                Models.TaskPriority.High => AlertStyle.Danger,
+                                Models.TaskPriority.Medium => AlertStyle.Warning,
+                                Models.TaskPriority.Low => AlertStyle.Success,
+                                _ => AlertStyle.Info
+                            };
+
+                            var badgeStyle = task.Status switch
+                            {
+                                Models.TaskStatus.Pending => BadgeStyle.Warning,
+                                Models.TaskStatus.InProgress => BadgeStyle.Info,
+                                Models.TaskStatus.Completed => BadgeStyle.Success,
+                                _ => BadgeStyle.Secondary
+                            };
+
+                            var statusText = task.Status switch
+                            {
+                                Models.TaskStatus.Pending => "Pending",
+                                Models.TaskStatus.InProgress => "In Progress",
+                                Models.TaskStatus.Completed => "Completed",
+                                _ => task.Status.ToString()
+                            };
+
+                            <RadzenAlert Shade="Shade.Light" Variant="Variant.Outlined" AlertStyle="@alertStyle">
+                                <RadzenText TextStyle="TextStyle.Subtitle1" class="rz-mb-3">
+                                    <RadzenIcon Icon="visibility" /> Preview
+                                </RadzenText>
+                                <RadzenCard>
+                                    <RadzenStack Gap="0.5rem">
+                                        <RadzenText TextStyle="TextStyle.H6">
+                                            @(string.IsNullOrWhiteSpace(task.Title) ? "Task title" : task.Title)
+                                        </RadzenText>
+                                        <RadzenText TextStyle="TextStyle.Caption" class="rz-color-secondary">
+                                            @(string.IsNullOrWhiteSpace(task.Description) ? "Task description" : task.Description)
+                                        </RadzenText>
+                                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" class="rz-mt-2">
+                                            <RadzenBadge Text="@statusText" BadgeStyle="@badgeStyle" />
+                                            <RadzenBadge Text="@task.Priority.ToString()" BadgeStyle="@(task.Priority == Models.TaskPriority.High ? BadgeStyle.Danger : task.Priority == Models.TaskPriority.Medium ? BadgeStyle.Warning : BadgeStyle.Success)" />
+                                            <RadzenText TextStyle="TextStyle.Caption" class="rz-color-secondary">
+                                                <RadzenIcon Icon="event" style="font-size: 0.8rem;" /> Due: @task.DueDate.ToString("dd/MM/yyyy")
+                                            </RadzenText>
+                                        </RadzenStack>
+                                    </RadzenStack>
+                                </RadzenCard>
+                            </RadzenAlert>
+                        }
+
+                        <!-- Buttons -->
+                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                            <RadzenButton Click="@Cancel" ButtonStyle="ButtonStyle.Light" Text="Cancel" Icon="cancel" />
+                            <RadzenButton ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Success"
+                                         Text="@(Id == null ? "Create Task" : "Update Task")"
+                                         Icon="save" Disabled="@saving" />
+                        </RadzenStack>
+                    </RadzenStack>
+                </EditForm>
+            </RadzenStack>
+        </RadzenCard>
+    </RadzenColumn>
+</RadzenRow>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private Models.Task task = new();
+    private bool saving = false;
+    private List<Models.TaskStatus> statuses = new() { Models.TaskStatus.Pending, Models.TaskStatus.InProgress, Models.TaskStatus.Completed };
+    private List<Models.TaskPriority> priorities = new() { Models.TaskPriority.Low, Models.TaskPriority.Medium, Models.TaskPriority.High };
+
+    protected override void OnInitialized()
+    {
+        if (Id != null)
+        {
+            var existingTask = TaskService.GetById(Id.Value);
+            if (existingTask != null)
+            {
+                task = existingTask;
+            }
+            else
+            {
+                Navigation.NavigateTo("/tasks");
+            }
+        }
+    }
+
+    private async System.Threading.Tasks.Task HandleSubmit()
+    {
+        saving = true;
+        await System.Threading.Tasks.Task.Delay(500); // Simulate save
+
+        if (Id == null)
+        {
+            TaskService.Create(task);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Task Created",
+                Detail = $"Task '{task.Title}' has been created successfully.",
+                Duration = 4000
+            });
+        }
+        else
+        {
+            TaskService.Update(task);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Task Updated",
+                Detail = $"Task '{task.Title}' has been updated successfully.",
+                Duration = 4000
+            });
+        }
+
+        saving = false;
+        Navigation.NavigateTo("/tasks");
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/tasks");
+    }
+}

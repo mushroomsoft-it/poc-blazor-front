@@ -1,0 +1,33 @@
+@inherits LayoutComponentBase
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4 bg-light border-bottom">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="text-muted">
+                        <i class="fas fa-laptop-code me-1"></i>
+                        Blazor WebAssembly - Bootstrap 5
+                    </small>
+                </div>
+                <div>
+                    <a href="https://getbootstrap.com/" target="_blank" class="text-decoration-none me-3">
+                        <i class="fab fa-bootstrap me-1"></i>
+                        Bootstrap
+                    </a>
+                    <a href="https://github.com" target="_blank" class="text-decoration-none">
+                        <i class="fab fa-github me-1"></i>
+                        GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <article class="content">
+            @Body
+        </article>
+    </main>
+</div>

@@ -1,0 +1,181 @@
+@page "/tasks/new"
+@page "/tasks/edit/{Id:int}"
+@inject TaskService TaskService
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>@(Id.HasValue ? "Edit Task" : "New Task") - FluentUI POC</PageTitle>
+
+<FluentStack Orientation="Orientation.Vertical" Width="100%">
+    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Style="justify-content: space-between;">
+        <FluentLabel Typo="Typography.H3">@(Id.HasValue ? "Edit Task" : "New Task")</FluentLabel>
+        <FluentButton Appearance="Appearance.Lightweight" OnClick="GoBack">
+            Back
+        </FluentButton>
+    </FluentStack>
+    <FluentDivider />
+
+    <FluentCard Style="margin-top: 20px; max-width: 800px;">
+        <EditForm Model="@taskModel" OnValidSubmit="SaveTask">
+            <DataAnnotationsValidator />
+
+            <FluentStack Orientation="Orientation.Vertical" Style="gap: 20px;">
+                <!-- Title -->
+                <FluentTextField @bind-Value="taskModel.Title" Label="Title *" Required Style="width: 100%;">
+                </FluentTextField>
+                <ValidationMessage For="@(() => taskModel.Title)" />
+
+                <!-- Description -->
+                <FluentTextArea @bind-Value="taskModel.Description" Label="Description *" Required Rows="4" Style="width: 100%;" />
+                <ValidationMessage For="@(() => taskModel.Description)" />
+
+                <!-- Status and Priority -->
+                <FluentStack Orientation="Orientation.Horizontal" Wrap="true" Style="gap: 20px;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <FluentSelect @bind-Value="selectedStatus" TOption="string" Label="Status *" Required Style="width: 100%;">
+                            <FluentOption Value="Pending">Pending</FluentOption>
+                            <FluentOption Value="InProgress">In Progress</FluentOption>
+                            <FluentOption Value="Completed">Completed</FluentOption>
+                        </FluentSelect>
+                        <ValidationMessage For="@(() => taskModel.Status)" />
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <FluentSelect @bind-Value="selectedPriority" TOption="string" Label="Priority *" Required Style="width: 100%;">
+                            <FluentOption Value="Low">Low</FluentOption>
+                            <FluentOption Value="Medium">Medium</FluentOption>
+                            <FluentOption Value="High">High</FluentOption>
+                        </FluentSelect>
+                        <ValidationMessage For="@(() => taskModel.Priority)" />
+                    </div>
+                </FluentStack>
+
+                <!-- Due Date -->
+                <FluentTextField @bind-Value="dueDateStr" Type="date" Label="Due Date *" Required Style="width: 100%;" />
+                <ValidationMessage For="@(() => taskModel.DueDate)" />
+
+                <!-- Completed -->
+                <FluentCheckbox @bind-Value="taskModel.Completed" Label="Mark as completed" />
+
+                <!-- Buttons -->
+                <FluentStack Orientation="Orientation.Horizontal" Style="gap: 10px; margin-top: 20px;">
+                    <FluentButton Type="ButtonType.Submit" Appearance="Appearance.Accent" Loading="@saving">
+                        @(saving ? "Saving..." : "Save")
+                    </FluentButton>
+                    <FluentButton Appearance="Appearance.Outline" OnClick="GoBack" Disabled="@saving">
+                        Cancel
+                    </FluentButton>
+                </FluentStack>
+            </FluentStack>
+        </EditForm>
+    </FluentCard>
+</FluentStack>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private TaskModel taskModel = new();
+    private bool saving = false;
+    private string selectedStatus = "Pending";
+    private string selectedPriority = "Medium";
+    private string dueDateStr = DateTime.Now.AddDays(7).ToString("yyyy-MM-dd");
+
+    protected override void OnInitialized()
+    {
+        if (Id.HasValue)
+        {
+            var task = TaskService.GetById(Id.Value);
+            if (task != null)
+            {
+                taskModel = new TaskModel
+                    {
+                        Title = task.Title,
+                        Description = task.Description,
+                        Status = task.Status,
+                        Priority = task.Priority,
+                        DueDate = task.DueDate,
+                        Completed = task.Completed
+                    };
+                selectedStatus = task.Status.ToString();
+                selectedPriority = task.Priority.ToString();
+                dueDateStr = task.DueDate.ToString("yyyy-MM-dd");
+            }
+        }
+    }
+
+    private async System.Threading.Tasks.Task SaveTask()
+    {
+        saving = true;
+        try
+        {
+            // Convert strings to enums
+            taskModel.Status = Enum.Parse<Models.TaskStatus>(selectedStatus);
+            taskModel.Priority = Enum.Parse<Models.TaskPriority>(selectedPriority);
+            taskModel.DueDate = DateTime.Parse(dueDateStr);
+
+            if (Id.HasValue)
+            {
+                var task = TaskService.GetById(Id.Value);
+                if (task != null)
+                {
+                    task.Title = taskModel.Title;
+                    task.Description = taskModel.Description;
+                    task.Status = taskModel.Status;
+                    task.Priority = taskModel.Priority;
+                    task.DueDate = taskModel.DueDate;
+                    task.Completed = taskModel.Completed;
+                    TaskService.Update(task);
+                    await DialogService.ShowSuccessAsync("Task updated successfully.");
+                }
+            }
+            else
+            {
+                var newTask = new Models.Task
+                    {
+                        Title = taskModel.Title,
+                        Description = taskModel.Description,
+                        Status = taskModel.Status,
+                        Priority = taskModel.Priority,
+                        DueDate = taskModel.DueDate,
+                        Completed = taskModel.Completed
+                    };
+                TaskService.Create(newTask);
+                await DialogService.ShowSuccessAsync("Task created successfully.");
+            }
+
+            Navigation.NavigateTo("/tasks");
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/tasks");
+    }
+
+    public class TaskModel
+    {
+        [Required(ErrorMessage = "Title is required")]
+        [StringLength(100, ErrorMessage = "Title cannot exceed 100 characters")]
+        public string Title { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Description is required")]
+        [StringLength(1000, ErrorMessage = "Description cannot exceed 1000 characters")]
+        public string Description { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Status is required")]
+        public Models.TaskStatus Status { get; set; } = Models.TaskStatus.Pending;
+
+        [Required(ErrorMessage = "Priority is required")]
+        public Models.TaskPriority Priority { get; set; } = Models.TaskPriority.Medium;
+
+        [Required(ErrorMessage = "Due date is required")]
+        public DateTime DueDate { get; set; } = DateTime.Now.AddDays(7);
+
+        public bool Completed { get; set; }
+    }
+}

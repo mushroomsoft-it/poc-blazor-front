@@ -1,0 +1,165 @@
+@page "/products/new"
+@page "/products/edit/{Id:int}"
+@inject ProductService ProductService
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>@(Id.HasValue ? "Edit Product" : "New Product") - FluentUI POC</PageTitle>
+
+<FluentStack Orientation="Orientation.Vertical" Width="100%">
+    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Style="justify-content: space-between;">
+        <FluentLabel Typo="Typography.H3">@(Id.HasValue ? "Edit Product" : "New Product")</FluentLabel>
+        <FluentButton Appearance="Appearance.Lightweight" OnClick="GoBack">
+            Back
+        </FluentButton>
+    </FluentStack>
+    <FluentDivider />
+
+    <FluentCard Style="margin-top: 20px; max-width: 800px;">
+        <EditForm Model="@productModel" OnValidSubmit="SaveProduct">
+            <DataAnnotationsValidator />
+
+            <FluentStack Orientation="Orientation.Vertical" Style="gap: 20px;">
+                <!-- Name -->
+                <FluentTextField @bind-Value="productModel.Name" Label="Name *" Required Style="width: 100%;">
+                </FluentTextField>
+                <ValidationMessage For="@(() => productModel.Name)" />
+
+                <!-- Description -->
+                <FluentTextArea @bind-Value="productModel.Description" Label="Description *" Required Rows="3" Style="width: 100%;" />
+                <ValidationMessage For="@(() => productModel.Description)" />
+
+                <!-- Category -->
+                <FluentSelect @bind-Value="productModel.Category" TOption="string" Label="Category *" Required Style="width: 100%;">
+                    <FluentOption Value="">Select a category</FluentOption>
+                    @foreach (var category in categories)
+                    {
+                        <FluentOption Value="@category">@category</FluentOption>
+                    }
+                </FluentSelect>
+                <ValidationMessage For="@(() => productModel.Category)" />
+
+                <!-- Price and Stock in two columns -->
+                <FluentStack Orientation="Orientation.Horizontal" Wrap="true" Style="gap: 20px;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <FluentNumberField @bind-Value="productModel.Price" TValue="decimal" Label="Price *" Required Min="0" Step="0.01" Style="width: 100%;">
+                        </FluentNumberField>
+                        <ValidationMessage For="@(() => productModel.Price)" />
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <FluentNumberField @bind-Value="productModel.Stock" TValue="int" Label="Stock *" Required Min="0" Style="width: 100%;">
+                        </FluentNumberField>
+                        <ValidationMessage For="@(() => productModel.Stock)" />
+                    </div>
+                </FluentStack>
+
+                <!-- Buttons -->
+                <FluentStack Orientation="Orientation.Horizontal" Style="gap: 10px; margin-top: 20px;">
+                    <FluentButton Type="ButtonType.Submit" Appearance="Appearance.Accent" Loading="@saving">
+                        @(saving ? "Saving..." : "Save")
+                    </FluentButton>
+                    <FluentButton Appearance="Appearance.Outline" OnClick="GoBack" Disabled="@saving">
+                        Cancel
+                    </FluentButton>
+                </FluentStack>
+            </FluentStack>
+        </EditForm>
+    </FluentCard>
+</FluentStack>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private ProductModel productModel = new();
+    private bool saving = false;
+    private List<string> categories = new() { "Electronics", "Peripherals", "Monitors", "Audio", "Storage", "Accessories" };
+
+    protected override void OnInitialized()
+    {
+        if (Id.HasValue)
+        {
+            var product = ProductService.GetById(Id.Value);
+            if (product != null)
+            {
+                productModel = new ProductModel
+                    {
+                        Name = product.Name,
+                        Description = product.Description,
+                        Price = product.Price,
+                        Stock = product.Stock,
+                        Category = product.Category
+                    };
+            }
+        }
+    }
+
+    private async System.Threading.Tasks.Task SaveProduct()
+    {
+        saving = true;
+        try
+        {
+            if (Id.HasValue)
+            {
+                var product = ProductService.GetById(Id.Value);
+                if (product != null)
+                {
+                    product.Name = productModel.Name;
+                    product.Description = productModel.Description;
+                    product.Price = productModel.Price;
+                    product.Stock = productModel.Stock;
+                    product.Category = productModel.Category;
+                    ProductService.Update(product);
+                    await DialogService.ShowSuccessAsync("Product updated successfully.");
+                }
+            }
+            else
+            {
+                var newProduct = new Product
+                    {
+                        Name = productModel.Name,
+                        Description = productModel.Description,
+                        Price = productModel.Price,
+                        Stock = productModel.Stock,
+                        Category = productModel.Category
+                    };
+                ProductService.Create(newProduct);
+                await DialogService.ShowSuccessAsync("Product created successfully.");
+            }
+
+            Navigation.NavigateTo("/products");
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/products");
+    }
+
+    public class ProductModel
+    {
+        [Required(ErrorMessage = "Name is required")]
+        [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters")]
+        public string Name { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Description is required")]
+        [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
+        public string Description { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Price is required")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than 0")]
+        public decimal Price { get; set; }
+
+        [Required(ErrorMessage = "Stock is required")]
+        [Range(0, int.MaxValue, ErrorMessage = "Stock cannot be negative")]
+        public int Stock { get; set; }
+
+        [Required(ErrorMessage = "Category is required")]
+        public string Category { get; set; } = string.Empty;
+    }
+}

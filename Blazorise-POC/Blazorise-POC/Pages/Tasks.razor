@@ -1,0 +1,528 @@
+@page "/tasks"
+@inject TaskService TaskService
+@inject NavigationManager Navigation
+
+<PageTitle>Tasks - Blazorise POC</PageTitle>
+
+<Container Fluid>
+    <Heading Size="HeadingSize.Is3" Margin="Margin.Is3.FromBottom">Task Management</Heading>
+    <Divider />
+
+    <!-- Search bar -->
+    <Row Margin="Margin.Is3.FromBottom">
+        <Column ColumnSize="ColumnSize.Is12.Is9.OnTablet">
+            <Field>
+                <FieldLabel>Search tasks</FieldLabel>
+                <TextEdit Placeholder="Search by title or description..." Text="@searchTerm" TextChanged="OnSearchChanged" />
+            </Field>
+        </Column>
+        <Column ColumnSize="ColumnSize.Is12.Is3.OnTablet" Display="Display.Flex" Style="align-items: flex-end;">
+            <Buttons>
+                <Button Color="Color.Success" Clicked="CreateNew">
+                    <Icon Name="IconName.Add" /> New Task
+                </Button>
+            </Buttons>
+        </Column>
+    </Row>
+
+    @if (filteredTasks == null)
+    {
+        <Div Display="Display.Flex" Style="justify-content: center;" Padding="Padding.Is5.FromTop">
+            <Div TextAlignment="TextAlignment.Center">
+                <Icon Name="IconName.Sync" IconSize="IconSize.x3" />
+                <Paragraph>Loading tasks...</Paragraph>
+            </Div>
+        </Div>
+    }
+    else
+    {
+        <!-- Task summary -->
+        <Row Margin="Margin.Is3.FromBottom">
+            <Column ColumnSize="ColumnSize.Is12.Is4.OnTablet">
+                <Card Background="Background.Light">
+                    <CardBody Display="Display.Flex" Style="justify-content: space-between; align-items: center;">
+                        <Div>
+                            <Small TextColor="TextColor.Muted">Total</Small>
+                            <Heading Size="HeadingSize.Is4" Margin="Margin.Is0">@filteredTasks.Count</Heading>
+                        </Div>
+                        <Icon Name="IconName.List" IconSize="IconSize.x2" TextColor="TextColor.Primary" />
+                    </CardBody>
+                </Card>
+            </Column>
+            <Column ColumnSize="ColumnSize.Is12.Is4.OnTablet">
+                <Card Background="Background.Success">
+                    <CardBody Display="Display.Flex" Style="justify-content: space-between; align-items: center;">
+                        <Div>
+                            <Small TextColor="TextColor.White50">Completed</Small>
+                            <Heading Size="HeadingSize.Is4" Margin="Margin.Is0" TextColor="TextColor.White">@filteredTasks.Count(t => t.Completed)</Heading>
+                        </Div>
+                        <Icon Name="IconName.CheckCircle" IconSize="IconSize.x2" TextColor="TextColor.White" />
+                    </CardBody>
+                </Card>
+            </Column>
+            <Column ColumnSize="ColumnSize.Is12.Is4.OnTablet">
+                <Card Background="Background.Warning">
+                    <CardBody Display="Display.Flex" Style="justify-content: space-between; align-items: center;">
+                        <Div>
+                            <Small TextColor="TextColor.White50">Pending</Small>
+                            <Heading Size="HeadingSize.Is4" Margin="Margin.Is0" TextColor="TextColor.White">@filteredTasks.Count(t => !t.Completed)</Heading>
+                        </Div>
+                        <Icon Name="IconName.Clock" IconSize="IconSize.x2" TextColor="TextColor.White" />
+                    </CardBody>
+                </Card>
+            </Column>
+        </Row>
+
+        <!-- Column Filters -->
+        <Card Margin="Margin.Is3.FromBottom">
+            <CardBody>
+                <Row>
+                    <Column ColumnSize="ColumnSize.Is12.Is3.OnTablet">
+                        <Field>
+                            <FieldLabel>Filter by Title</FieldLabel>
+                            <TextEdit Placeholder="Filter title..." Text="@filterTitle" TextChanged="OnFilterTitleChanged" />
+                        </Field>
+                    </Column>
+                    <Column ColumnSize="ColumnSize.Is12.Is3.OnTablet">
+                        <Field>
+                            <FieldLabel>Filter by Description</FieldLabel>
+                            <TextEdit Placeholder="Filter description..." Text="@filterDescription" TextChanged="OnFilterDescriptionChanged" />
+                        </Field>
+                    </Column>
+                    <Column ColumnSize="ColumnSize.Is12.Is2.OnTablet">
+                        <Field>
+                            <FieldLabel>Status</FieldLabel>
+                            <Select TValue="string" SelectedValue="@filterStatus" SelectedValueChanged="OnFilterStatusChanged">
+                                <SelectItem TValue="string" Value="@string.Empty">All Statuses</SelectItem>
+                                <SelectItem TValue="string" Value="@("Pending")">Pending</SelectItem>
+                                <SelectItem TValue="string" Value="@("InProgress")">In Progress</SelectItem>
+                                <SelectItem TValue="string" Value="@("Completed")">Completed</SelectItem>
+                            </Select>
+                        </Field>
+                    </Column>
+                    <Column ColumnSize="ColumnSize.Is12.Is2.OnTablet">
+                        <Field>
+                            <FieldLabel>Priority</FieldLabel>
+                            <Select TValue="string" SelectedValue="@filterPriority" SelectedValueChanged="OnFilterPriorityChanged">
+                                <SelectItem TValue="string" Value="@string.Empty">All Priorities</SelectItem>
+                                <SelectItem TValue="string" Value="@("Low")">Low</SelectItem>
+                                <SelectItem TValue="string" Value="@("Medium")">Medium</SelectItem>
+                                <SelectItem TValue="string" Value="@("High")">High</SelectItem>
+                            </Select>
+                        </Field>
+                    </Column>
+                    <Column ColumnSize="ColumnSize.Is12.Is2.OnTablet" Display="Display.Flex" Style="align-items: flex-end;">
+                        <Field>
+                            <Button Color="Color.Secondary" Clicked="ClearColumnFilters">
+                                <Icon Name="IconName.Times" /> Clear Filters
+                            </Button>
+                        </Field>
+                    </Column>
+                </Row>
+                <Row>
+                    <Column ColumnSize="ColumnSize.Is12.Is3.OnTablet">
+                        <Field>
+                            <FieldLabel>Due Date</FieldLabel>
+                            <DateEdit TValue="DateTime?" Date="@filterDueDate" DateChanged="OnFilterDueDateChanged" />
+                        </Field>
+                    </Column>
+                </Row>
+            </CardBody>
+        </Card>
+
+        @if (!filteredTasks.Any())
+        {
+            <Alert Color="Color.Info" Visible>
+                <Icon Name="IconName.InfoCircle" /> No tasks found.
+            </Alert>
+        }
+        else
+        {
+            <!-- DataGrid -->
+            <DataGrid TItem="Models.Task"
+                      Data="@filteredTasks"
+                      Sortable
+                      ShowPager
+                      PageSize="10"
+                      Responsive
+                      Striped
+                      Bordered
+                      Hoverable>
+                <DataGridColumns>
+                    <DataGridColumn TItem="Models.Task" Field="@nameof(Models.Task.Completed)" Caption="" Width="60px" Filterable="false" Sortable="false">
+                        <DisplayTemplate>
+                            <Check TValue="bool" Checked="@context.Completed" CheckedChanged="@(async (bool value) => await ToggleCompleted(context.Id, value))" />
+                        </DisplayTemplate>
+                    </DataGridColumn>
+
+                    <DataGridColumn TItem="Models.Task" Field="@nameof(Models.Task.Title)" Caption="Title" Sortable>
+                        <DisplayTemplate>
+                            @if (context.Completed)
+                            {
+                                <del>@context.Title</del>
+                            }
+                            else
+                            {
+                                <strong>@context.Title</strong>
+                            }
+                        </DisplayTemplate>
+                    </DataGridColumn>
+
+                    <DataGridColumn TItem="Models.Task" Field="@nameof(Models.Task.Description)" Caption="Description">
+                        <DisplayTemplate>
+                            @if (!string.IsNullOrEmpty(context.Description))
+                            {
+                                <Small TextColor="TextColor.Muted">
+                                    @(context.Description.Length > 60 ? context.Description.Substring(0, 60) + "..." : context.Description)
+                                </Small>
+                            }
+                            else
+                            {
+                                <Small TextColor="TextColor.Muted">No description</Small>
+                            }
+                        </DisplayTemplate>
+                    </DataGridColumn>
+
+                    <DataGridColumn TItem="Models.Task" Field="@nameof(Models.Task.Status)" Caption="Status" Sortable>
+                        <DisplayTemplate>
+                            <Badge Color="@GetStatusColor(context.Status)">@GetStatusName(context.Status)</Badge>
+                        </DisplayTemplate>
+                    </DataGridColumn>
+
+                    <DataGridColumn TItem="Models.Task" Field="@nameof(Models.Task.Priority)" Caption="Priority" Sortable>
+                        <DisplayTemplate>
+                            <Badge Color="@GetPriorityColor(context.Priority)">
+                                <Icon Name="IconName.Flag" /> @GetPriorityName(context.Priority)
+                            </Badge>
+                        </DisplayTemplate>
+                    </DataGridColumn>
+
+                    <DataGridColumn TItem="Models.Task" Field="@nameof(Models.Task.DueDate)" Caption="Due Date" Sortable>
+                        <DisplayTemplate>
+                            @{
+                                var isOverdue = context.DueDate < DateTime.Now && !context.Completed;
+                            }
+                            @if (isOverdue)
+                            {
+                                <Span TextColor="TextColor.Danger">
+                                    <Icon Name="IconName.ExclamationCircle" />
+                                    <strong>@context.DueDate.ToString("dd/MM/yyyy")</strong>
+                                    <Badge Color="Color.Danger" Margin="Margin.Is1.FromStart">Overdue</Badge>
+                                </Span>
+                            }
+                            else
+                            {
+                                <Small TextColor="@GetDueDateColor(context.DueDate, context.Completed)">
+                                    <Icon Name="IconName.Calendar" />
+                                    @context.DueDate.ToString("dd/MM/yyyy")
+                                </Small>
+                            }
+                        </DisplayTemplate>
+                    </DataGridColumn>
+
+                    <DataGridColumn TItem="Models.Task" Caption="Actions" Width="150px" Filterable="false" Sortable="false">
+                        <DisplayTemplate>
+                            <Buttons>
+                                <Button Color="Color.Primary" Size="Size.Small" Clicked="@(() => EditTask(context.Id))">
+                                    <Icon Name="IconName.Edit" />
+                                </Button>
+                                <Button Color="Color.Danger" Size="Size.Small" Clicked="@(() => ShowDeleteConfirmation(context))">
+                                    <Icon Name="IconName.Delete" />
+                                </Button>
+                            </Buttons>
+                        </DisplayTemplate>
+                    </DataGridColumn>
+                </DataGridColumns>
+            </DataGrid>
+        }
+    }
+
+    <!-- Delete confirmation modal -->
+    <Modal @ref="deleteModal">
+        <ModalContent Centered>
+            <ModalHeader>
+                <ModalTitle>Confirm Deletion</ModalTitle>
+                <CloseButton />
+            </ModalHeader>
+            <ModalBody>
+                <Paragraph>Are you sure you want to delete the task <Strong>@taskToDelete?.Title</Strong>?</Paragraph>
+                <Alert Color="Color.Warning" Visible>
+                    <Icon Name="IconName.ExclamationTriangle" /> This action cannot be undone.
+                </Alert>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="CloseDeleteModal">Cancel</Button>
+                <Button Color="Color.Danger" Clicked="ConfirmDelete">
+                    <Icon Name="IconName.Delete" /> Delete
+                </Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+
+    <!-- Notification toast -->
+    @if (!string.IsNullOrEmpty(notificationMessage))
+    {
+        <Div Style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;">
+            <Alert Color="@notificationColor" Visible Dismissible>
+                @notificationMessage
+            </Alert>
+        </Div>
+    }
+</Container>
+
+@code {
+    private List<Models.Task> allTasks = new();
+    private List<Models.Task> filteredTasks = new();
+    private string searchTerm = "";
+
+    // Column filters
+    private string filterTitle = "";
+    private string filterDescription = "";
+    private string filterStatus = "";
+    private string filterPriority = "";
+    private DateTime? filterDueDate;
+
+    private Modal? deleteModal;
+    private Models.Task? taskToDelete;
+
+    private string notificationMessage = "";
+    private Color notificationColor = Color.Success;
+
+    protected override void OnInitialized()
+    {
+        LoadTasks();
+    }
+
+    private void LoadTasks()
+    {
+        allTasks = TaskService.GetAll();
+        ApplyFilters();
+    }
+
+    private void OnSearchChanged(string value)
+    {
+        searchTerm = value;
+        ApplyFilters();
+    }
+
+    private void OnFilterTitleChanged(string value)
+    {
+        filterTitle = value;
+        ApplyFilters();
+    }
+
+    private void OnFilterDescriptionChanged(string value)
+    {
+        filterDescription = value;
+        ApplyFilters();
+    }
+
+    private void OnFilterStatusChanged(string value)
+    {
+        filterStatus = value;
+        ApplyFilters();
+    }
+
+    private void OnFilterPriorityChanged(string value)
+    {
+        filterPriority = value;
+        ApplyFilters();
+    }
+
+    private void OnFilterDueDateChanged(DateTime? value)
+    {
+        filterDueDate = value;
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        // Start with all tasks
+        filteredTasks = allTasks;
+
+        // Apply global search filter
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredTasks = filteredTasks.Where(t =>
+                t.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                t.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        // Apply column filters
+        if (!string.IsNullOrWhiteSpace(filterTitle))
+        {
+            filteredTasks = filteredTasks.Where(t =>
+                t.Title.Contains(filterTitle, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterDescription))
+        {
+            filteredTasks = filteredTasks.Where(t =>
+                t.Description.Contains(filterDescription, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterStatus))
+        {
+            var status = Enum.Parse<Blazorise_POC.Models.TaskStatus>(filterStatus);
+            filteredTasks = filteredTasks.Where(t => t.Status == status).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterPriority))
+        {
+            var priority = Enum.Parse<Blazorise_POC.Models.TaskPriority>(filterPriority);
+            filteredTasks = filteredTasks.Where(t => t.Priority == priority).ToList();
+        }
+
+        if (filterDueDate.HasValue)
+        {
+            filteredTasks = filteredTasks.Where(t =>
+                t.DueDate.Date == filterDueDate.Value.Date
+            ).ToList();
+        }
+
+        StateHasChanged();
+    }
+
+    private void ClearColumnFilters()
+    {
+        filterTitle = "";
+        filterDescription = "";
+        filterStatus = "";
+        filterPriority = "";
+        filterDueDate = null;
+        ApplyFilters();
+    }
+
+    private async System.Threading.Tasks.Task ToggleCompleted(int id, bool completed)
+    {
+        var success = TaskService.ToggleCompleted(id);
+        if (success)
+        {
+            var task = TaskService.GetById(id);
+            if (task != null)
+            {
+                LoadTasks();
+                await ShowNotification(
+                    $"Task '{task.Title}' marked as {(task.Completed ? "completed" : "pending")}",
+                    Color.Success
+                );
+            }
+        }
+    }
+
+    private void CreateNew()
+    {
+        Navigation.NavigateTo("/tasks/new");
+    }
+
+    private void EditTask(int id)
+    {
+        Navigation.NavigateTo($"/tasks/edit/{id}");
+    }
+
+    private async System.Threading.Tasks.Task ShowDeleteConfirmation(Models.Task task)
+    {
+        taskToDelete = task;
+        if (deleteModal != null)
+        {
+            await deleteModal.Show();
+        }
+    }
+
+    private async System.Threading.Tasks.Task CloseDeleteModal()
+    {
+        if (deleteModal != null)
+        {
+            await deleteModal.Hide();
+        }
+        taskToDelete = null;
+    }
+
+    private async System.Threading.Tasks.Task ConfirmDelete()
+    {
+        if (taskToDelete != null)
+        {
+            TaskService.Delete(taskToDelete.Id);
+            await CloseDeleteModal();
+            LoadTasks();
+            await ShowNotification($"Task '{taskToDelete.Title}' deleted successfully", Color.Success);
+        }
+    }
+
+    private async System.Threading.Tasks.Task ShowNotification(string message, Color color)
+    {
+        notificationMessage = message;
+        notificationColor = color;
+        StateHasChanged();
+
+        await System.Threading.Tasks.Task.Delay(3000);
+        notificationMessage = "";
+        StateHasChanged();
+    }
+
+    private Color GetStatusColor(Blazorise_POC.Models.TaskStatus status)
+    {
+        return status switch
+        {
+            Blazorise_POC.Models.TaskStatus.Completed => Color.Success,
+            Blazorise_POC.Models.TaskStatus.InProgress => Color.Info,
+            _ => Color.Secondary
+        };
+    }
+
+    private Color GetPriorityColor(Blazorise_POC.Models.TaskPriority priority)
+    {
+        return priority switch
+        {
+            Blazorise_POC.Models.TaskPriority.High => Color.Danger,
+            Blazorise_POC.Models.TaskPriority.Medium => Color.Warning,
+            _ => Color.Success
+        };
+    }
+
+    private IFluentBorder GetBorderColor(Blazorise_POC.Models.TaskPriority priority)
+    {
+        return priority switch
+        {
+            Blazorise_POC.Models.TaskPriority.High => Border.Danger.OnAll,
+            Blazorise_POC.Models.TaskPriority.Medium => Border.Warning.OnAll,
+            _ => Border.Success.OnAll
+        };
+    }
+
+    private TextColor GetDueDateColor(DateTime dueDate, bool completed)
+    {
+        if (completed)
+            return TextColor.Muted;
+        if (dueDate < DateTime.Now)
+            return TextColor.Danger;
+        if (dueDate < DateTime.Now.AddDays(3))
+            return TextColor.Warning;
+        return TextColor.Muted;
+    }
+
+    private string GetStatusName(Blazorise_POC.Models.TaskStatus status)
+    {
+        return status switch
+        {
+            Blazorise_POC.Models.TaskStatus.Pending => "Pending",
+            Blazorise_POC.Models.TaskStatus.InProgress => "In Progress",
+            Blazorise_POC.Models.TaskStatus.Completed => "Completed",
+            _ => status.ToString()
+        };
+    }
+
+    private string GetPriorityName(Blazorise_POC.Models.TaskPriority priority)
+    {
+        return priority switch
+        {
+            Blazorise_POC.Models.TaskPriority.Low => "Low",
+            Blazorise_POC.Models.TaskPriority.Medium => "Medium",
+            Blazorise_POC.Models.TaskPriority.High => "High",
+            _ => priority.ToString()
+        };
+    }
+}

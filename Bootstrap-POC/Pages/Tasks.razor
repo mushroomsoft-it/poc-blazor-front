@@ -1,0 +1,477 @@
+@page "/tasks"
+@inject Services.TaskService TaskService
+@inject NavigationManager Navigation
+
+<PageTitle>Tasks - Bootstrap POC</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-5 mb-1">
+                        <i class="fas fa-tasks me-2 text-success"></i>
+                        Tasks
+                    </h1>
+                    <p class="text-muted mb-0">Task and activity management</p>
+                </div>
+                <div>
+                    <button class="btn btn-success btn-lg" @onclick="NewTask">
+                        <i class="fas fa-plus me-2"></i>
+                        New Task
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control" placeholder="Search by title or description..."
+                               @bind="searchTerm" @bind:event="oninput" @onkeyup="OnSearchChanged" />
+                        @if (!string.IsNullOrWhiteSpace(searchTerm))
+                        {
+                            <button class="btn btn-outline-secondary" @onclick="ClearSearch">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    @if (filteredTasks.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 50px"></th>
+                                        <th class="cursor-pointer" @onclick="@(() => Sort("Title"))">
+                                            Title
+                                            @if (sortColumn == "Title")
+                                            {
+                                                <i class="fas fa-sort-@(sortAscending ? "up" : "down") ms-1"></i>
+                                            }
+                                        </th>
+                                        <th>Description</th>
+                                        <th class="cursor-pointer" @onclick="@(() => Sort("Status"))">
+                                            Status
+                                            @if (sortColumn == "Status")
+                                            {
+                                                <i class="fas fa-sort-@(sortAscending ? "up" : "down") ms-1"></i>
+                                            }
+                                        </th>
+                                        <th class="cursor-pointer" @onclick="@(() => Sort("Priority"))">
+                                            Priority
+                                            @if (sortColumn == "Priority")
+                                            {
+                                                <i class="fas fa-sort-@(sortAscending ? "up" : "down") ms-1"></i>
+                                            }
+                                        </th>
+                                        <th class="cursor-pointer" @onclick="@(() => Sort("DueDate"))">
+                                            Due Date
+                                            @if (sortColumn == "DueDate")
+                                            {
+                                                <i class="fas fa-sort-@(sortAscending ? "up" : "down") ms-1"></i>
+                                            }
+                                        </th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                    <tr>
+                                        <th></th>
+                                        <th>
+                                            <input type="text" class="form-control form-control-sm" placeholder="Filter title"
+                                                   @bind="filterTitle" @bind:event="oninput" @onkeyup="OnFilterChanged" />
+                                        </th>
+                                        <th>
+                                            <input type="text" class="form-control form-control-sm" placeholder="Filter description"
+                                                   @bind="filterDescription" @bind:event="oninput" @onkeyup="OnFilterChanged" />
+                                        </th>
+                                        <th>
+                                            <select class="form-select form-select-sm" @bind="filterStatus" @bind:after="OnFilterChanged">
+                                                <option value="">All Statuses</option>
+                                                <option value="Pending">Pending</option>
+                                                <option value="InProgress">In Progress</option>
+                                                <option value="Completed">Completed</option>
+                                            </select>
+                                        </th>
+                                        <th>
+                                            <select class="form-select form-select-sm" @bind="filterPriority" @bind:after="OnFilterChanged">
+                                                <option value="">All Priorities</option>
+                                                <option value="Low">Low</option>
+                                                <option value="Medium">Medium</option>
+                                                <option value="High">High</option>
+                                            </select>
+                                        </th>
+                                        <th>
+                                            <input type="date" class="form-control form-control-sm"
+                                                   @bind="filterDueDate" @bind:after="OnFilterChanged" />
+                                        </th>
+                                        <th class="text-end">
+                                            <button class="btn btn-sm btn-outline-secondary" @onclick="ClearColumnFilters" title="Clear all filters">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var task in paginatedTasks)
+                                    {
+                                        var statusBadgeClass = task.Status switch
+                                        {
+                                            Models.TaskStatus.Pending => "bg-warning",
+                                            Models.TaskStatus.InProgress => "bg-info",
+                                            Models.TaskStatus.Completed => "bg-success",
+                                            _ => "bg-secondary"
+                                        };
+
+                                        var priorityBadgeClass = task.Priority switch
+                                        {
+                                            Models.TaskPriority.High => "bg-danger",
+                                            Models.TaskPriority.Medium => "bg-warning",
+                                            Models.TaskPriority.Low => "bg-success",
+                                            _ => "bg-secondary"
+                                        };
+
+                                        var isOverdue = task.DueDate < DateTime.Now && !task.Completed;
+
+                                        <tr class="@(task.Completed ? "table-secondary" : "")">
+                                            <td>
+                                                <input class="form-check-input" type="checkbox" checked="@task.Completed"
+                                                       @onchange="@(() => ToggleCompleted(task.Id))" />
+                                            </td>
+                                            <td class="@(task.Completed ? "text-decoration-line-through" : "fw-semibold")">
+                                                @task.Title
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">
+                                                    @(task.Description.Length > 60 ? task.Description.Substring(0, 60) + "..." : task.Description)
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <span class="badge @statusBadgeClass">
+                                                    @task.Status.ToString().Replace("InProgress", "In Progress")
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge @priorityBadgeClass">
+                                                    <i class="fas fa-flag me-1"></i>
+                                                    @task.Priority
+                                                </span>
+                                            </td>
+                                            <td>
+                                                @if (isOverdue)
+                                                {
+                                                    <span class="text-danger fw-bold">
+                                                        <i class="fas fa-exclamation-circle me-1"></i>
+                                                        @task.DueDate.ToString("dd/MM/yyyy")
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <small class="text-muted">@task.DueDate.ToString("dd/MM/yyyy")</small>
+                                                }
+                                            </td>
+                                            <td class="text-end">
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-outline-primary" @onclick="@(() => EditTask(task.Id))">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn btn-outline-danger" @onclick="@(() => DeleteTask(task.Id))">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div class="card-footer bg-white border-top">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <small class="text-muted">
+                                        Showing @((currentPage - 1) * itemsPerPage + 1) to @Math.Min(currentPage * itemsPerPage, filteredTasks.Count) of @filteredTasks.Count tasks
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <nav>
+                                        <ul class="pagination pagination-sm justify-content-end mb-0">
+                                            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                                <button class="page-link" @onclick="PreviousPage">
+                                                    <i class="fas fa-chevron-left"></i>
+                                                </button>
+                                            </li>
+                                            @for (int i = 1; i <= totalPages; i++)
+                                            {
+                                                var pageNum = i;
+                                                <li class="page-item @(currentPage == pageNum ? "active" : "")">
+                                                    <button class="page-link" @onclick="@(() => ChangePage(pageNum))">@pageNum</button>
+                                                </li>
+                                            }
+                                            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                                <button class="page-link" @onclick="NextPage">
+                                                    <i class="fas fa-chevron-right"></i>
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                            <h5 class="text-muted">No tasks found</h5>
+                            @if (!string.IsNullOrWhiteSpace(searchTerm) || HasActiveFilters())
+                            {
+                                <p class="text-muted">Try different search filters</p>
+                                <button class="btn btn-outline-primary" @onclick="ClearAllFilters">
+                                    <i class="fas fa-times me-2"></i>
+                                    Clear filters
+                                </button>
+                            }
+                            else
+                            {
+                                <p class="text-muted">Add your first task</p>
+                                <button class="btn btn-success" @onclick="NewTask">
+                                    <i class="fas fa-plus me-2"></i>
+                                    New Task
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Models.Task> allTasks = new();
+    private List<Models.Task> filteredTasks = new();
+    private List<Models.Task> paginatedTasks = new();
+    private string searchTerm = string.Empty;
+    private string sortColumn = "DueDate";
+    private bool sortAscending = true;
+    private int currentPage = 1;
+    private int itemsPerPage = 10;
+    private int totalPages => (int)Math.Ceiling(filteredTasks.Count / (double)itemsPerPage);
+
+    // Column filters
+    private string filterTitle = string.Empty;
+    private string filterDescription = string.Empty;
+    private string filterStatus = string.Empty;
+    private string filterPriority = string.Empty;
+    private DateTime? filterDueDate;
+
+    protected override void OnInitialized()
+    {
+        LoadTasks();
+    }
+
+    private void LoadTasks()
+    {
+        allTasks = TaskService.GetAll();
+        ApplyFiltersAndSorting();
+    }
+
+    private void OnSearchChanged()
+    {
+        currentPage = 1;
+        ApplyFiltersAndSorting();
+    }
+
+    private void ClearSearch()
+    {
+        searchTerm = string.Empty;
+        OnSearchChanged();
+    }
+
+    private void OnFilterChanged()
+    {
+        currentPage = 1;
+        ApplyFiltersAndSorting();
+    }
+
+    private void ClearColumnFilters()
+    {
+        filterTitle = string.Empty;
+        filterDescription = string.Empty;
+        filterStatus = string.Empty;
+        filterPriority = string.Empty;
+        filterDueDate = null;
+        OnFilterChanged();
+    }
+
+    private void ClearAllFilters()
+    {
+        searchTerm = string.Empty;
+        ClearColumnFilters();
+    }
+
+    private bool HasActiveFilters()
+    {
+        return !string.IsNullOrWhiteSpace(filterTitle) ||
+               !string.IsNullOrWhiteSpace(filterDescription) ||
+               !string.IsNullOrWhiteSpace(filterStatus) ||
+               !string.IsNullOrWhiteSpace(filterPriority) ||
+               filterDueDate.HasValue;
+    }
+
+    private void Sort(string column)
+    {
+        if (sortColumn == column)
+        {
+            sortAscending = !sortAscending;
+        }
+        else
+        {
+            sortColumn = column;
+            sortAscending = true;
+        }
+        ApplyFiltersAndSorting();
+    }
+
+    private void ApplyFiltersAndSorting()
+    {
+        // Start with all tasks
+        filteredTasks = allTasks;
+
+        // Apply global search filter
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredTasks = filteredTasks.Where(t =>
+                t.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                t.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        // Apply column filters
+        if (!string.IsNullOrWhiteSpace(filterTitle))
+        {
+            filteredTasks = filteredTasks.Where(t =>
+                t.Title.Contains(filterTitle, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterDescription))
+        {
+            filteredTasks = filteredTasks.Where(t =>
+                t.Description.Contains(filterDescription, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterStatus))
+        {
+            var status = Enum.Parse<Models.TaskStatus>(filterStatus);
+            filteredTasks = filteredTasks.Where(t => t.Status == status).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterPriority))
+        {
+            var priority = Enum.Parse<Models.TaskPriority>(filterPriority);
+            filteredTasks = filteredTasks.Where(t => t.Priority == priority).ToList();
+        }
+
+        if (filterDueDate.HasValue)
+        {
+            filteredTasks = filteredTasks.Where(t =>
+                t.DueDate.Date == filterDueDate.Value.Date
+            ).ToList();
+        }
+
+        // Sort
+        filteredTasks = sortColumn switch
+        {
+            "Title" => sortAscending ? filteredTasks.OrderBy(t => t.Title).ToList() : filteredTasks.OrderByDescending(t => t.Title).ToList(),
+            "Status" => sortAscending ? filteredTasks.OrderBy(t => t.Status).ToList() : filteredTasks.OrderByDescending(t => t.Status).ToList(),
+            "Priority" => sortAscending ? filteredTasks.OrderBy(t => t.Priority).ToList() : filteredTasks.OrderByDescending(t => t.Priority).ToList(),
+            "DueDate" => sortAscending ? filteredTasks.OrderBy(t => t.DueDate).ToList() : filteredTasks.OrderByDescending(t => t.DueDate).ToList(),
+            _ => filteredTasks
+        };
+
+        UpdatePagination();
+    }
+
+    private void UpdatePagination()
+    {
+        paginatedTasks = filteredTasks
+            .Skip((currentPage - 1) * itemsPerPage)
+            .Take(itemsPerPage)
+            .ToList();
+    }
+
+    private void ChangePage(int page)
+    {
+        currentPage = page;
+        UpdatePagination();
+    }
+
+    private void PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            UpdatePagination();
+        }
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < totalPages)
+        {
+            currentPage++;
+            UpdatePagination();
+        }
+    }
+
+    private void ToggleCompleted(int id)
+    {
+        TaskService.ToggleCompleted(id);
+        LoadTasks();
+    }
+
+    private void NewTask()
+    {
+        Navigation.NavigateTo("/tasks/new");
+    }
+
+    private void EditTask(int id)
+    {
+        Navigation.NavigateTo($"/tasks/edit/{id}");
+    }
+
+    private void DeleteTask(int id)
+    {
+        if (confirm($"Are you sure you want to delete task {id}?"))
+        {
+            TaskService.Delete(id);
+            LoadTasks();
+        }
+    }
+
+    private bool confirm(string message)
+    {
+        // In production, this should be a Bootstrap confirmation modal
+        return true;
+    }
+}

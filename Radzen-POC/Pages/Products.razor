@@ -1,0 +1,152 @@
+@page "/products"
+@inject Services.ProductService ProductService
+@inject NavigationManager Navigation
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Products - Radzen POC</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn>
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                <RadzenStack Gap="0.5rem">
+                    <RadzenText TextStyle="TextStyle.H4" TagName="TagName.H1">
+                        <RadzenIcon Icon="inventory_2" /> Products
+                    </RadzenText>
+                    <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-color-secondary">Product catalog management</RadzenText>
+                </RadzenStack>
+                <RadzenButton Click="@NewProduct" Icon="add" Text="New Product" ButtonStyle="ButtonStyle.Primary" />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn>
+            <RadzenCard>
+                <RadzenDataGrid @ref="productsGrid" Data="@products" TItem="Models.Product"
+                               AllowFiltering="true" AllowSorting="true" AllowPaging="true"
+                               PageSize="10" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                               FilterMode="FilterMode.Advanced" LogicalFilterOperator="LogicalFilterOperator.Or">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="Models.Product" Property="Id" Title="ID" Width="80px">
+                            <Template Context="product">
+                                <RadzenBadge Text="@product.Id.ToString()" Variant="Variant.Outlined" />
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="Models.Product" Property="Name" Title="Name">
+                            <Template Context="product">
+                                <RadzenText TextStyle="TextStyle.Subtitle2">@product.Name</RadzenText>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="Models.Product" Property="Description" Title="Description" Filterable="true" Sortable="false">
+                            <Template Context="product">
+                                <RadzenText TextStyle="TextStyle.Caption" class="rz-color-secondary">
+                                    @(product.Description.Length > 50 ? product.Description.Substring(0, 50) + "..." : product.Description)
+                                </RadzenText>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="Models.Product" Property="Category" Title="Category" Width="150px">
+                            <Template Context="product">
+                                <RadzenBadge Text="@product.Category" />
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="Models.Product" Property="Price" Title="Price" Width="120px" TextAlign="TextAlign.End">
+                            <Template Context="product">
+                                <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-color-success-darker">
+                                    $@product.Price.ToString("N2")
+                                </RadzenText>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="Models.Product" Property="Stock" Title="Stock" Width="100px" TextAlign="TextAlign.End">
+                            <Template Context="product">
+                                @if (product.Stock < 20)
+                                {
+                                    <RadzenBadge Text="@product.Stock.ToString()" BadgeStyle="BadgeStyle.Warning" IsPill="true">
+                                        <ChildContent>
+                                            <RadzenIcon Icon="warning" style="font-size: 0.8rem;" /> @product.Stock
+                                        </ChildContent>
+                                    </RadzenBadge>
+                                }
+                                else
+                                {
+                                    <RadzenBadge Text="@product.Stock.ToString()" BadgeStyle="BadgeStyle.Success" IsPill="true" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="Models.Product" Property="CreationDate" Title="Created" Width="120px" FormatString="{0:dd/MM/yyyy}">
+                            <Template Context="product">
+                                <RadzenText TextStyle="TextStyle.Caption" class="rz-color-secondary">
+                                    @product.CreationDate.ToString("dd/MM/yyyy")
+                                </RadzenText>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="Models.Product" Title="Actions" Width="120px" Filterable="false" Sortable="false" TextAlign="TextAlign.Center">
+                            <Template Context="product">
+                                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" JustifyContent="JustifyContent.Center">
+                                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="@(() => EditProduct(product.Id))" />
+                                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(() => DeleteProduct(product.Id))" />
+                                </RadzenStack>
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    private RadzenDataGrid<Models.Product>? productsGrid;
+    private List<Models.Product> products = new();
+
+    protected override void OnInitialized()
+    {
+        LoadProducts();
+    }
+
+    private void LoadProducts()
+    {
+        products = ProductService.GetAll();
+    }
+
+    private void NewProduct()
+    {
+        Navigation.NavigateTo("/products/new");
+    }
+
+    private void EditProduct(int id)
+    {
+        Navigation.NavigateTo($"/products/edit/{id}");
+    }
+
+    private async System.Threading.Tasks.Task DeleteProduct(int id)
+    {
+        var result = await DialogService.Confirm("Are you sure you want to delete this product?", "Delete Product",
+            new ConfirmOptions { OkButtonText = "Delete", CancelButtonText = "Cancel" });
+
+        if (result == true)
+        {
+            var success = ProductService.Delete(id);
+            if (success)
+            {
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Product Deleted",
+                    Detail = "The product has been successfully deleted.",
+                    Duration = 4000
+                });
+                LoadProducts();
+                await productsGrid!.Reload();
+            }
+        }
+    }
+}

@@ -1,0 +1,144 @@
+@page "/"
+@inject StatisticsService StatisticsService
+@inject NavigationManager Navigation
+
+<PageTitle>Dashboard - FluentUI POC</PageTitle>
+
+<FluentStack Orientation="Orientation.Vertical" Width="100%">
+    <FluentLabel Typo="Typography.H3">Dashboard</FluentLabel>
+    <FluentDivider />
+
+    <FluentStack Orientation="Orientation.Horizontal" Wrap="true" Style="gap: 20px; margin-top: 20px;">
+        <!-- Card: Total Products -->
+        <FluentCard Style="min-width: 250px; flex: 1;">
+            <FluentStack Orientation="Orientation.Vertical">
+                <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                    <FluentLabel Typo="Typography.Body">Total Products</FluentLabel>
+                </FluentStack>
+                <FluentLabel Typo="Typography.H2" Style="color: var(--accent-fill-rest);">@StatisticsService.GetTotalProducts()</FluentLabel>
+                <FluentButton Appearance="Appearance.Lightweight" OnClick="@(() => Navigation.NavigateTo("/products"))">
+                    View products
+                </FluentButton>
+            </FluentStack>
+        </FluentCard>
+
+        <!-- Card: Inventory Value -->
+        <FluentCard Style="min-width: 250px; flex: 1;">
+            <FluentStack Orientation="Orientation.Vertical">
+                <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                    <FluentLabel Typo="Typography.Body">Inventory Value</FluentLabel>
+                </FluentStack>
+                <FluentLabel Typo="Typography.H2" Style="color: var(--success);">$@StatisticsService.GetTotalInventoryValue().ToString("N2")</FluentLabel>
+                <FluentLabel Style="font-size: 12px; color: var(--neutral-foreground-hint);">Total in stock</FluentLabel>
+            </FluentStack>
+        </FluentCard>
+
+        <!-- Card: Low Stock Products -->
+        <FluentCard Style="min-width: 250px; flex: 1;">
+            <FluentStack Orientation="Orientation.Vertical">
+                <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                    <FluentLabel Typo="Typography.Body">Low Stock</FluentLabel>
+                </FluentStack>
+                <FluentLabel Typo="Typography.H2" Style="color: var(--warning);">@StatisticsService.GetLowStockProducts()</FluentLabel>
+                <FluentLabel Style="font-size: 12px; color: var(--neutral-foreground-hint);">Products with less than 20 units</FluentLabel>
+            </FluentStack>
+        </FluentCard>
+
+        <!-- Card: Pending Tasks -->
+        <FluentCard Style="min-width: 250px; flex: 1;">
+            <FluentStack Orientation="Orientation.Vertical">
+                <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                    <FluentLabel Typo="Typography.Body">Pending Tasks</FluentLabel>
+                </FluentStack>
+                <FluentLabel Typo="Typography.H2" Style="color: var(--info);">@StatisticsService.GetPendingTasks()</FluentLabel>
+                <FluentButton Appearance="Appearance.Lightweight" OnClick="@(() => Navigation.NavigateTo("/tasks"))">
+                    View tasks
+                </FluentButton>
+            </FluentStack>
+        </FluentCard>
+    </FluentStack>
+
+    <!-- Charts Section -->
+    <FluentStack Orientation="Orientation.Horizontal" Wrap="true" Style="gap: 20px; margin-top: 30px;">
+        <!-- Products by Category -->
+        <FluentCard Style="min-width: 400px; flex: 1;">
+            <FluentStack Orientation="Orientation.Vertical">
+                <FluentLabel Typo="Typography.H5">Products by Category</FluentLabel>
+                <FluentDivider />
+                @foreach (var category in StatisticsService.GetProductsByCategory())
+                {
+                    <FluentStack Orientation="Orientation.Vertical" Style="margin: 10px 0;">
+                        <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Style="justify-content: space-between;">
+                            <FluentLabel>@category.Key</FluentLabel>
+                            <FluentBadge Appearance="Appearance.Accent">@category.Value</FluentBadge>
+                        </FluentStack>
+                        <FluentProgress Value="@category.Value" Max="@StatisticsService.GetTotalProducts()" Style="width: 100%;" />
+                    </FluentStack>
+                }
+            </FluentStack>
+        </FluentCard>
+
+        <!-- Tasks by Status -->
+        <FluentCard Style="min-width: 400px; flex: 1;">
+            <FluentStack Orientation="Orientation.Vertical">
+                <FluentLabel Typo="Typography.H5">Tasks by Status</FluentLabel>
+                <FluentDivider />
+                @foreach (var status in StatisticsService.GetTasksByStatus())
+                {
+                    var color = status.Key switch
+                    {
+                        Models.TaskStatus.Completed => "success",
+                        Models.TaskStatus.InProgress => "info",
+                        _ => "neutral"
+                    };
+                    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Style="justify-content: space-between; margin: 10px 0;">
+                        <FluentLabel>@status.Key</FluentLabel>
+                        <FluentBadge Appearance="Appearance.Neutral" BackgroundColor="@color" Color="@color">@status.Value</FluentBadge>
+                    </FluentStack>
+                }
+            </FluentStack>
+        </FluentCard>
+
+        <!-- Tasks by Priority (Pending only) -->
+        <FluentCard Style="min-width: 400px; flex: 1;">
+            <FluentStack Orientation="Orientation.Vertical">
+                <FluentLabel Typo="Typography.H5">Pending Tasks by Priority</FluentLabel>
+                <FluentDivider />
+                @foreach (var priority in StatisticsService.GetTasksByPriority())
+                {
+                    var color = priority.Key switch
+                    {
+                        Models.TaskPriority.High => Color.Error,
+                        Models.TaskPriority.Medium => Color.Warning,
+                        _ => Color.Success
+                    };
+                    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Style="justify-content: space-between; margin: 10px 0;">
+                        <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                            <FluentLabel>@priority.Key</FluentLabel>
+                        </FluentStack>
+                        <FluentBadge Appearance="Appearance.Accent">@priority.Value</FluentBadge>
+                    </FluentStack>
+                }
+            </FluentStack>
+        </FluentCard>
+    </FluentStack>
+
+    <!-- Quick Actions -->
+    <FluentCard Style="margin-top: 30px;">
+        <FluentStack Orientation="Orientation.Vertical">
+            <FluentLabel Typo="Typography.H5">Quick Actions</FluentLabel>
+            <FluentDivider />
+            <FluentStack Orientation="Orientation.Horizontal" Wrap="true" Style="gap: 10px; margin-top: 10px;">
+                <FluentButton Appearance="Appearance.Accent" OnClick="@(() => Navigation.NavigateTo("/products"))">
+                    Manage Products
+                </FluentButton>
+                <FluentButton Appearance="Appearance.Accent" OnClick="@(() => Navigation.NavigateTo("/tasks"))">
+                    Manage Tasks
+                </FluentButton>
+                <FluentButton Appearance="Appearance.Outline" OnClick="@(() => Navigation.NavigateTo("/components"))">
+                    View Components
+                </FluentButton>
+            </FluentStack>
+        </FluentStack>
+    </FluentCard>
+</FluentStack>

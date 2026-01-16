@@ -1,0 +1,225 @@
+@page "/tasks/new"
+@page "/tasks/edit/{id:int}"
+@inject Services.TaskService TaskService
+@inject NavigationManager Navigation
+
+<PageTitle>@(Id == null ? "New Task" : "Edit Task") - Bootstrap POC</PageTitle>
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="fas @(Id == null ? "fa-plus" : "fa-edit") me-2"></i>
+                        @(Id == null ? "New Task" : "Edit Task")
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <EditForm Model="@task" OnValidSubmit="@HandleSubmit">
+                        <DataAnnotationsValidator />
+
+                        <!-- Title -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Title <span class="text-danger">*</span>
+                            </label>
+                            <InputText @bind-Value="task.Title" class="form-control" placeholder="E.g: Review documentation" />
+                            <ValidationMessage For="@(() => task.Title)" class="text-danger small" />
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Description <span class="text-danger">*</span>
+                            </label>
+                            <InputTextArea @bind-Value="task.Description" class="form-control" rows="4"
+                                           placeholder="Detailed task description" />
+                            <ValidationMessage For="@(() => task.Description)" class="text-danger small" />
+                        </div>
+
+                        <!-- Status and Priority -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Status</label>
+                                    <InputSelect @bind-Value="task.Status" class="form-select">
+                                        <option value="@Models.TaskStatus.Pending">Pending</option>
+                                        <option value="@Models.TaskStatus.InProgress">In Progress</option>
+                                        <option value="@Models.TaskStatus.Completed">Completed</option>
+                                    </InputSelect>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Priority</label>
+                                    <InputSelect @bind-Value="task.Priority" class="form-select">
+                                        <option value="@Models.TaskPriority.Low">
+                                            <i class="fas fa-arrow-down"></i> Low
+                                        </option>
+                                        <option value="@Models.TaskPriority.Medium">
+                                            <i class="fas fa-minus"></i> Medium
+                                        </option>
+                                        <option value="@Models.TaskPriority.High">
+                                            <i class="fas fa-arrow-up"></i> High
+                                        </option>
+                                    </InputSelect>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Due Date -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Due Date</label>
+                            <InputDate @bind-Value="task.DueDate" class="form-control" />
+                        </div>
+
+                        <!-- Completed -->
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <InputCheckbox @bind-Value="task.Completed" class="form-check-input" id="completed" />
+                                <label class="form-check-label" for="completed">
+                                    Mark as completed
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Preview Card -->
+                        @if (!string.IsNullOrWhiteSpace(task.Title) || !string.IsNullOrWhiteSpace(task.Description))
+                        {
+                            var borderClass = task.Priority switch
+                            {
+                                Models.TaskPriority.High => "border-danger",
+                                Models.TaskPriority.Medium => "border-warning",
+                                Models.TaskPriority.Low => "border-success",
+                                _ => "border-secondary"
+                            };
+
+                            var badgeClass = task.Status switch
+                            {
+                                Models.TaskStatus.Pending => "bg-warning",
+                                Models.TaskStatus.InProgress => "bg-info",
+                                Models.TaskStatus.Completed => "bg-success",
+                                _ => "bg-secondary"
+                            };
+
+                            var statusName = task.Status switch
+                            {
+                                Models.TaskStatus.Pending => "Pending",
+                                Models.TaskStatus.InProgress => "In Progress",
+                                Models.TaskStatus.Completed => "Completed",
+                                _ => task.Status.ToString()
+                            };
+
+                            var priorityName = task.Priority switch
+                            {
+                                Models.TaskPriority.Low => "Low",
+                                Models.TaskPriority.Medium => "Medium",
+                                Models.TaskPriority.High => "High",
+                                _ => task.Priority.ToString()
+                            };
+
+                            <div class="alert alert-info mb-3">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-eye me-2"></i>
+                                    Preview
+                                </h6>
+                                <div class="card mt-2 border-start border-3 @borderClass">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h5 class="card-title mb-0 @(task.Completed ? "text-decoration-line-through text-muted" : "")">
+                                                @(string.IsNullOrWhiteSpace(task.Title) ? "Task title" : task.Title)
+                                            </h5>
+                                            <span class="badge @badgeClass">@statusName</span>
+                                        </div>
+                                        <p class="card-text">
+                                            <small class="text-muted">
+                                                @(string.IsNullOrWhiteSpace(task.Description) ? "Task description" : task.Description)
+                                            </small>
+                                        </p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">
+                                                <i class="fas fa-flag me-1"></i>
+                                                @priorityName Priority
+                                            </small>
+                                            <small class="text-muted">
+                                                <i class="fas fa-calendar me-1"></i>
+                                                @task.DueDate.ToString("dd/MM/yyyy")
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Buttons -->
+                        <div class="d-flex gap-2 justify-content-end">
+                            <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">
+                                <i class="fas fa-times me-2"></i>
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-success" disabled="@saving">
+                                @if (saving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-save me-2"></i>
+                                }
+                                @(Id == null ? "Create Task" : "Update Task")
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private Models.Task task = new();
+    private bool saving = false;
+
+    protected override void OnInitialized()
+    {
+        if (Id != null)
+        {
+            var existingTask = TaskService.GetById(Id.Value);
+            if (existingTask != null)
+            {
+                task = existingTask;
+            }
+            else
+            {
+                Navigation.NavigateTo("/tasks");
+            }
+        }
+    }
+
+    private async System.Threading.Tasks.Task HandleSubmit()
+    {
+        saving = true;
+        await System.Threading.Tasks.Task.Delay(500); // Simulate save
+
+        if (Id == null)
+        {
+            TaskService.Create(task);
+        }
+        else
+        {
+            TaskService.Update(task);
+        }
+
+        saving = false;
+        Navigation.NavigateTo("/tasks");
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/tasks");
+    }
+}

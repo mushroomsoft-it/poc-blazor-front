@@ -1,0 +1,176 @@
+@page "/products/new"
+@page "/products/edit/{id:int}"
+@inject Services.ProductService ProductService
+@inject NavigationManager Navigation
+
+<PageTitle>@(Id == null ? "New Product" : "Edit Product") - Bootstrap POC</PageTitle>
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas @(Id == null ? "fa-plus" : "fa-edit") me-2"></i>
+                        @(Id == null ? "New Product" : "Edit Product")
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <EditForm Model="@product" OnValidSubmit="@HandleSubmit">
+                        <DataAnnotationsValidator />
+
+                        <!-- Name -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Name <span class="text-danger">*</span>
+                            </label>
+                            <InputText @bind-Value="product.Name" class="form-control" placeholder="E.g: RGB Gaming Mouse" />
+                            <ValidationMessage For="@(() => product.Name)" class="text-danger small" />
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Description <span class="text-danger">*</span>
+                            </label>
+                            <InputTextArea @bind-Value="product.Description" class="form-control" rows="3"
+                                           placeholder="Detailed product description" />
+                            <ValidationMessage For="@(() => product.Description)" class="text-danger small" />
+                        </div>
+
+                        <!-- Category -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Category <span class="text-danger">*</span>
+                            </label>
+                            <InputSelect @bind-Value="product.Category" class="form-select">
+                                <option value="">-- Select a category --</option>
+                                <option value="Electronics">Electronics</option>
+                                <option value="Peripherals">Peripherals</option>
+                                <option value="Monitors">Monitors</option>
+                                <option value="Audio">Audio</option>
+                                <option value="Storage">Storage</option>
+                                <option value="Accessories">Accessories</option>
+                            </InputSelect>
+                            <ValidationMessage For="@(() => product.Category)" class="text-danger small" />
+                        </div>
+
+                        <!-- Price and Stock -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">
+                                        Price <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <InputNumber @bind-Value="product.Price" class="form-control" placeholder="0.00" step="0.01" />
+                                    </div>
+                                    <ValidationMessage For="@(() => product.Price)" class="text-danger small" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">
+                                        Stock <span class="text-danger">*</span>
+                                    </label>
+                                    <InputNumber @bind-Value="product.Stock" class="form-control" placeholder="0" />
+                                    <ValidationMessage For="@(() => product.Stock)" class="text-danger small" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preview Card -->
+                        @if (!string.IsNullOrWhiteSpace(product.Name) || !string.IsNullOrWhiteSpace(product.Description))
+                        {
+                            <div class="alert alert-info mb-3">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-eye me-2"></i>
+                                    Preview
+                                </h6>
+                                <div class="card mt-2">
+                                    <div class="card-body">
+                                        <h5 class="card-title">@(string.IsNullOrWhiteSpace(product.Name) ? "Product name" : product.Name)</h5>
+                                        <p class="card-text">
+                                            <small class="text-muted">@(string.IsNullOrWhiteSpace(product.Description) ? "Product description" : product.Description)</small>
+                                        </p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-primary">@(string.IsNullOrWhiteSpace(product.Category) ? "No category" : product.Category)</span>
+                                            <span class="fw-bold text-success">$@product.Price.ToString("N2")</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Buttons -->
+                        <div class="d-flex gap-2 justify-content-end">
+                            <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">
+                                <i class="fas fa-times me-2"></i>
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary" disabled="@saving">
+                                @if (saving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-save me-2"></i>
+                                }
+                                @(Id == null ? "Create Product" : "Update Product")
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private Models.Product product = new();
+    private bool saving = false;
+
+    protected override void OnInitialized()
+    {
+        if (Id != null)
+        {
+            var existingProduct = ProductService.GetById(Id.Value);
+            if (existingProduct != null)
+            {
+                product = existingProduct;
+            }
+            else
+            {
+                Navigation.NavigateTo("/products");
+            }
+        }
+    }
+
+    private async System.Threading.Tasks.Task HandleSubmit()
+    {
+        saving = true;
+        await System.Threading.Tasks.Task.Delay(500); // Simulate save
+
+        if (Id == null)
+        {
+            ProductService.Create(product);
+        }
+        else
+        {
+            ProductService.Update(product);
+        }
+
+        saving = false;
+        Navigation.NavigateTo("/products");
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/products");
+    }
+}

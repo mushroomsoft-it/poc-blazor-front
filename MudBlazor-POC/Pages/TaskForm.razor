@@ -1,0 +1,293 @@
+@page "/tasks/new"
+@page "/tasks/edit/{Id:int}"
+@inject TaskService TaskService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(Id == 0 ? "New Task" : "Edit Task") - MudBlazor POC</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">
+    <MudIcon Icon="@(Id == 0 ? Icons.Material.Filled.Add : Icons.Material.Filled.Edit)" Class="mr-2" />
+    @(Id == 0 ? "New Task" : "Edit Task")
+</MudText>
+
+<MudGrid>
+    <MudItem xs="12" md="8">
+        <MudPaper Class="pa-4" Elevation="2">
+            @if (task == null)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else
+            {
+                <EditForm Model="@task" OnValidSubmit="HandleSubmit">
+                    <DataAnnotationsValidator />
+
+                    <MudTextField Label="Title"
+                                  @bind-Value="task.Title"
+                                  For="@(() => task.Title)"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Required="true"
+                                  Counter="100"
+                                  MaxLength="100"
+                                  HelperText="Brief and descriptive task title" />
+
+                    <MudTextField Label="Description"
+                                  @bind-Value="task.Description"
+                                  For="@(() => task.Description)"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Lines="4"
+                                  Required="true"
+                                  Counter="1000"
+                                  MaxLength="1000"
+                                  HelperText="Detailed task description" />
+
+                    <MudGrid Class="mt-2">
+                        <MudItem xs="12" sm="6">
+                            <MudSelect Label="Status"
+                                       @bind-Value="task.Status"
+                                       For="@(() => task.Status)"
+                                       Variant="Variant.Outlined"
+                                       Margin="Margin.Dense"
+                                       Required="true">
+                                <MudSelectItem Value="@Models.TaskStatus.Pending">Pending</MudSelectItem>
+                                <MudSelectItem Value="@Models.TaskStatus.InProgress">In Progress</MudSelectItem>
+                                <MudSelectItem Value="@Models.TaskStatus.Completed">Completed</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudSelect Label="Priority"
+                                       @bind-Value="task.Priority"
+                                       For="@(() => task.Priority)"
+                                       Variant="Variant.Outlined"
+                                       Margin="Margin.Dense"
+                                       Required="true">
+                                <MudSelectItem Value="@Models.TaskPriority.Low">Low</MudSelectItem>
+                                <MudSelectItem Value="@Models.TaskPriority.Medium">Medium</MudSelectItem>
+                                <MudSelectItem Value="@Models.TaskPriority.High">High</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudDatePicker Label="Due Date"
+                                   @bind-Date="dueDate"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   Required="true"
+                                   HelperText="Task deadline" />
+
+                    @if (dueDate.HasValue)
+                    {
+                        var daysRemaining = (dueDate.Value - DateTime.Now).Days;
+                        <MudAlert Severity="@GetDueDateSeverity(daysRemaining)" Variant="Variant.Text" Dense="true" Class="mt-2">
+                            @if (daysRemaining < 0)
+                            {
+                                <text>Overdue by @Math.Abs(daysRemaining) day@(Math.Abs(daysRemaining) > 1 ? "s" : "")</text>
+                            }
+                            else if (daysRemaining == 0)
+                            {
+                                <text>Due today</text>
+                            }
+                            else if (daysRemaining <= 3)
+                            {
+                                <text>Due in @daysRemaining day@(daysRemaining > 1 ? "s" : "") (urgent)</text>
+                            }
+                            else
+                            {
+                                <text>Due in @daysRemaining day@(daysRemaining > 1 ? "s" : "")</text>
+                            }
+                        </MudAlert>
+                    }
+
+                    <MudSwitch @bind-Value="task.Completed"
+                               Color="Color.Success"
+                               Label="Mark as completed"
+                               Class="mt-3" />
+
+                    <MudDivider Class="my-4" />
+
+                    <MudStack Row="true" Spacing="2" Justify="Justify.FlexEnd">
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Secondary"
+                                   StartIcon="@Icons.Material.Filled.Cancel"
+                                   OnClick="Cancel">
+                            Cancel
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Save"
+                                   ButtonType="ButtonType.Submit"
+                                   Disabled="saving">
+                            @if (saving)
+                            {
+                                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                                <MudText Class="ms-2">Saving...</MudText>
+                            }
+                            else
+                            {
+                                <span>@(Id == 0 ? "Create Task" : "Save Changes")</span>
+                            }
+                        </MudButton>
+                    </MudStack>
+                </EditForm>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" md="4">
+        @if (task != null)
+        {
+            <MudPaper Class="pa-4 mb-4" Elevation="2">
+                <MudText Typo="Typo.h6" GutterBottom="true">
+                    <MudIcon Icon="@Icons.Material.Filled.Preview" Class="mr-2" />
+                    Preview
+                </MudText>
+                <MudDivider Class="mb-3" />
+                <MudStack Row="true" Spacing="1" Class="mb-2">
+                    <MudBadge Content="@task.Status.ToString()" Color="@GetStatusColor()" />
+                    <MudBadge Content="@task.Priority.ToString()" Color="@GetPriorityColor()" Icon="@Icons.Material.Filled.Flag" />
+                </MudStack>
+                <MudText Typo="Typo.h6">
+                    @if (task.Completed)
+                    {
+                        <del>@(string.IsNullOrWhiteSpace(task.Title) ? "Task title" : task.Title)</del>
+                    }
+                    else
+                    {
+                        @(string.IsNullOrWhiteSpace(task.Title) ? "Task title" : task.Title)
+                    }
+                </MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">
+                    @(string.IsNullOrWhiteSpace(task.Description) ? "Task description" : task.Description)
+                </MudText>
+                @if (task.Completed)
+                {
+                    <MudAlert Severity="Severity.Success" Dense="true" Icon="@Icons.Material.Filled.CheckCircle">
+                        Task completed
+                    </MudAlert>
+                }
+            </MudPaper>
+
+            @if (Id == 0)
+            {
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudText Typo="Typo.h6" GutterBottom="true">
+                        <MudIcon Icon="@Icons.Material.Filled.Info" Class="mr-2" />
+                        Priority Guide
+                    </MudText>
+                    <MudDivider Class="mb-3" />
+                    <MudStack Spacing="2">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="@Icons.Material.Filled.Flag" Color="Color.Error" Size="Size.Small" />
+                            <MudText Typo="Typo.body2"><strong>High:</strong> Urgent tasks requiring immediate attention</MudText>
+                        </MudStack>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="@Icons.Material.Filled.Flag" Color="Color.Warning" Size="Size.Small" />
+                            <MudText Typo="Typo.body2"><strong>Medium:</strong> Important but not urgent tasks</MudText>
+                        </MudStack>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="@Icons.Material.Filled.Flag" Color="Color.Success" Size="Size.Small" />
+                            <MudText Typo="Typo.body2"><strong>Low:</strong> Tasks that can wait</MudText>
+                        </MudStack>
+                    </MudStack>
+                </MudPaper>
+            }
+        }
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Models.Task? task;
+    private DateTime? dueDate;
+    private bool saving = false;
+
+    protected override void OnInitialized()
+    {
+        if (Id == 0)
+        {
+            task = new Models.Task();
+            dueDate = task.DueDate;
+        }
+        else
+        {
+            task = TaskService.GetById(Id);
+            if (task == null)
+            {
+                Navigation.NavigateTo("/tasks");
+            }
+            else
+            {
+                dueDate = task.DueDate;
+            }
+        }
+    }
+
+    private async System.Threading.Tasks.Task HandleSubmit()
+    {
+        saving = true;
+        await System.Threading.Tasks.Task.Delay(300);
+
+        try
+        {
+            task!.DueDate = dueDate ?? DateTime.Now.AddDays(7);
+
+            if (Id == 0)
+            {
+                TaskService.Create(task);
+                Snackbar.Add("Task created successfully!", Severity.Success);
+            }
+            else
+            {
+                TaskService.Update(task);
+                Snackbar.Add("Task updated successfully!", Severity.Success);
+            }
+
+            Navigation.NavigateTo("/tasks");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/tasks");
+    }
+
+    private Color GetStatusColor()
+    {
+        return task!.Status switch
+        {
+            Models.TaskStatus.Completed => Color.Success,
+            Models.TaskStatus.InProgress => Color.Info,
+            _ => Color.Default
+        };
+    }
+
+    private Color GetPriorityColor()
+    {
+        return task!.Priority switch
+        {
+            Models.TaskPriority.High => Color.Error,
+            Models.TaskPriority.Medium => Color.Warning,
+            _ => Color.Success
+        };
+    }
+
+    private Severity GetDueDateSeverity(int daysRemaining)
+    {
+        if (daysRemaining < 0) return Severity.Error;
+        if (daysRemaining <= 3) return Severity.Warning;
+        return Severity.Success;
+    }
+}

@@ -1,0 +1,92 @@
+@page "/weather"
+
+<PageTitle>Weather - Radzen POC</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn>
+            <RadzenText TextStyle="TextStyle.H4" TagName="TagName.H1">
+                <RadzenIcon Icon="cloud" /> Weather Forecast
+            </RadzenText>
+            <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-color-secondary">Sample weather data display</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn>
+            <RadzenCard>
+                <RadzenDataGrid Data="@forecasts" TItem="WeatherForecast" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="WeatherForecast" Property="Date" Title="Date" FormatString="{0:dd/MM/yyyy}">
+                            <Template Context="forecast">
+                                <RadzenText TextStyle="TextStyle.Subtitle2">
+                                    <RadzenIcon Icon="event" style="font-size: 0.9rem;" /> @forecast.Date.ToString("dd/MM/yyyy")
+                                </RadzenText>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="WeatherForecast" Property="TemperatureC" Title="Temp. (C)" Width="120px">
+                            <Template Context="forecast">
+                                <RadzenText TextStyle="TextStyle.Subtitle2" class="@(forecast.TemperatureC > 20 ? "rz-color-danger" : "rz-color-info")">
+                                    <RadzenIcon Icon="thermostat" style="font-size: 0.9rem;" /> @forecast.TemperatureC°C
+                                </RadzenText>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="WeatherForecast" Property="TemperatureF" Title="Temp. (F)" Width="120px">
+                            <Template Context="forecast">
+                                <RadzenText TextStyle="TextStyle.Caption" class="rz-color-secondary">@forecast.TemperatureF°F</RadzenText>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="WeatherForecast" Property="Summary" Title="Summary">
+                            <Template Context="forecast">
+                                @{
+                                    var badgeStyle = forecast.Summary switch
+                                    {
+                                        "Freezing" => BadgeStyle.Info,
+                                        "Bracing" => BadgeStyle.Info,
+                                        "Chilly" => BadgeStyle.Secondary,
+                                        "Cool" => BadgeStyle.Secondary,
+                                        "Mild" => BadgeStyle.Success,
+                                        "Warm" => BadgeStyle.Warning,
+                                        "Balmy" => BadgeStyle.Warning,
+                                        "Hot" => BadgeStyle.Danger,
+                                        "Sweltering" => BadgeStyle.Danger,
+                                        "Scorching" => BadgeStyle.Danger,
+                                        _ => BadgeStyle.Light
+                                    };
+                                }
+                                <RadzenBadge Text="@forecast.Summary" BadgeStyle="@badgeStyle" IsPill="true" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    private WeatherForecast[] forecasts = Array.Empty<WeatherForecast>();
+
+    protected override void OnInitialized()
+    {
+        var startDate = DateTime.Now;
+        var summaries = new[] { "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching" };
+        forecasts = Enumerable.Range(1, 10).Select(index => new WeatherForecast
+        {
+            Date = startDate.AddDays(index),
+            TemperatureC = Random.Shared.Next(-20, 55),
+            Summary = summaries[Random.Shared.Next(summaries.Length)]
+        }).ToArray();
+    }
+
+    private class WeatherForecast
+    {
+        public DateTime Date { get; set; }
+        public int TemperatureC { get; set; }
+        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+        public string Summary { get; set; } = string.Empty;
+    }
+}

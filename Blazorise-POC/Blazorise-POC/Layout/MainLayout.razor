@@ -1,0 +1,44 @@
+﻿@inherits LayoutComponentBase
+
+<Layout>
+    <LayoutHeader Fixed="true">
+        <Bar Mode="BarMode.Horizontal" Background="Background.Primary" ThemeContrast="ThemeContrast.Light">
+            <BarBrand>
+                <BarItem>
+                    <BarLink To="">
+                        <Icon Name="IconName.Dashboard" /> Blazorise POC
+                    </BarLink>
+                </BarItem>
+            </BarBrand>
+            <BarToggler />
+            <BarMenu>
+                <BarStart>
+                    <BarItem>
+                        <BarLink To="">
+                            <Icon Name="IconName.Home" /> Dashboard
+                        </BarLink>
+                    </BarItem>
+                    <BarItem>
+                        <BarLink To="products">
+                            <Icon Name="IconName.Archive" /> Products
+                        </BarLink>
+                    </BarItem>
+                    <BarItem>
+                        <BarLink To="tasks">
+                            <Icon Name="IconName.List" /> Tasks
+                        </BarLink>
+                    </BarItem>
+                    <BarItem>
+                        <BarLink To="components">
+                            <Icon Name="IconName.List" /> Components
+                        </BarLink>
+                    </BarItem>
+                </BarStart>
+            </BarMenu>
+        </Bar>
+    </LayoutHeader>
+
+    <LayoutContent Padding="Padding.Is3.OnAll" style="margin-top: 56px;">
+        @Body
+    </LayoutContent>
+</Layout>

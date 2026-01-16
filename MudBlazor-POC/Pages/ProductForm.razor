@@ -1,0 +1,220 @@
+@page "/products/new"
+@page "/products/edit/{Id:int}"
+@inject ProductService ProductService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(Id == 0 ? "New Product" : "Edit Product") - MudBlazor POC</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">
+    <MudIcon Icon="@(Id == 0 ? Icons.Material.Filled.Add : Icons.Material.Filled.Edit)" Class="mr-2" />
+    @(Id == 0 ? "New Product" : "Edit Product")
+</MudText>
+
+<MudGrid>
+    <MudItem xs="12" md="8">
+        <MudPaper Class="pa-4" Elevation="2">
+            @if (product == null)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else
+            {
+                <EditForm Model="@product" OnValidSubmit="HandleSubmit">
+                    <DataAnnotationsValidator />
+
+                    <MudTextField Label="Name"
+                                  @bind-Value="product.Name"
+                                  For="@(() => product.Name)"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Required="true"
+                                  HelperText="Enter the product name" />
+
+                    <MudTextField Label="Description"
+                                  @bind-Value="product.Description"
+                                  For="@(() => product.Description)"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Lines="3"
+                                  Required="true"
+                                  HelperText="Detailed product description" />
+
+                    <MudSelect Label="Category"
+                               @bind-Value="product.Category"
+                               For="@(() => product.Category)"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Required="true">
+                        <MudSelectItem Value="@("Electronics")">Electronics</MudSelectItem>
+                        <MudSelectItem Value="@("Peripherals")">Peripherals</MudSelectItem>
+                        <MudSelectItem Value="@("Monitors")">Monitors</MudSelectItem>
+                        <MudSelectItem Value="@("Audio")">Audio</MudSelectItem>
+                        <MudSelectItem Value="@("Storage")">Storage</MudSelectItem>
+                        <MudSelectItem Value="@("Accessories")">Accessories</MudSelectItem>
+                    </MudSelect>
+
+                    <MudGrid Class="mt-2">
+                        <MudItem xs="12" sm="6">
+                            <MudNumericField Label="Price"
+                                             @bind-Value="product.Price"
+                                             For="@(() => product.Price)"
+                                             Variant="Variant.Outlined"
+                                             Margin="Margin.Dense"
+                                             Format="N2"
+                                             Adornment="Adornment.Start"
+                                             AdornmentText="$"
+                                             Required="true"
+                                             Min="0.01m"
+                                             HelperText="Product price" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudNumericField Label="Stock"
+                                             @bind-Value="product.Stock"
+                                             For="@(() => product.Stock)"
+                                             Variant="Variant.Outlined"
+                                             Margin="Margin.Dense"
+                                             Required="true"
+                                             Min="0"
+                                             HelperText="Available stock" />
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudDivider Class="my-4" />
+
+                    <MudStack Row="true" Spacing="2" Justify="Justify.FlexEnd">
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Secondary"
+                                   StartIcon="@Icons.Material.Filled.Cancel"
+                                   OnClick="Cancel">
+                            Cancel
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Save"
+                                   ButtonType="ButtonType.Submit"
+                                   Disabled="saving">
+                            @if (saving)
+                            {
+                                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                                <MudText Class="ms-2">Saving...</MudText>
+                            }
+                            else
+                            {
+                                <span>@(Id == 0 ? "Create Product" : "Save Changes")</span>
+                            }
+                        </MudButton>
+                    </MudStack>
+                </EditForm>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" md="4">
+        @if (product != null)
+        {
+            <MudPaper Class="pa-4 mb-4" Elevation="2">
+                <MudText Typo="Typo.h6" GutterBottom="true">
+                    <MudIcon Icon="@Icons.Material.Filled.Preview" Class="mr-2" />
+                    Preview
+                </MudText>
+                <MudDivider Class="mb-3" />
+                <MudText Typo="Typo.h6">@(string.IsNullOrWhiteSpace(product.Name) ? "Product name" : product.Name)</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">
+                    @(string.IsNullOrWhiteSpace(product.Description) ? "Product description" : product.Description)
+                </MudText>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                    <MudBadge Content="@(string.IsNullOrWhiteSpace(product.Category) ? "Category" : product.Category)" Color="Color.Primary" />
+                    <MudText Typo="Typo.h6" Color="Color.Success">$@product.Price.ToString("N2")</MudText>
+                </MudStack>
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+                    Stock: @product.Stock units
+                </MudText>
+            </MudPaper>
+
+            @if (Id == 0)
+            {
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudText Typo="Typo.h6" GutterBottom="true">
+                        <MudIcon Icon="@Icons.Material.Filled.Info" Class="mr-2" />
+                        Information
+                    </MudText>
+                    <MudDivider Class="mb-3" />
+                    <MudStack Spacing="2">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" />
+                            <MudText Typo="Typo.body2">All fields marked with * are required</MudText>
+                        </MudStack>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" />
+                            <MudText Typo="Typo.body2">Price must be greater than $0.00</MudText>
+                        </MudStack>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" />
+                            <MudText Typo="Typo.body2">Stock cannot be negative</MudText>
+                        </MudStack>
+                    </MudStack>
+                </MudPaper>
+            }
+        }
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Product? product;
+    private bool saving = false;
+
+    protected override void OnInitialized()
+    {
+        if (Id == 0)
+        {
+            product = new Product();
+        }
+        else
+        {
+            product = ProductService.GetById(Id);
+            if (product == null)
+            {
+                Navigation.NavigateTo("/products");
+            }
+        }
+    }
+
+    private async System.Threading.Tasks.Task HandleSubmit()
+    {
+        saving = true;
+        await System.Threading.Tasks.Task.Delay(300);
+
+        try
+        {
+            if (Id == 0)
+            {
+                ProductService.Create(product!);
+                Snackbar.Add("Product created successfully!", Severity.Success);
+            }
+            else
+            {
+                ProductService.Update(product!);
+                Snackbar.Add("Product updated successfully!", Severity.Success);
+            }
+
+            Navigation.NavigateTo("/products");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/products");
+    }
+}

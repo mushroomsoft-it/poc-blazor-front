@@ -1,0 +1,177 @@
+@page "/products/new"
+@page "/products/edit/{id:int}"
+@inject Services.ProductService ProductService
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+
+<PageTitle>@(Id == null ? "New Product" : "Edit Product") - Radzen POC</PageTitle>
+
+<RadzenRow JustifyContent="JustifyContent.Center">
+    <RadzenColumn Size="12" SizeLG="8">
+        <RadzenCard>
+            <RadzenStack Gap="1rem">
+                <RadzenText TextStyle="TextStyle.H5">
+                    <RadzenIcon Icon="@(Id == null ? "add" : "edit")" /> @(Id == null ? "New Product" : "Edit Product")
+                </RadzenText>
+
+                <EditForm Model="@product" OnValidSubmit="@HandleSubmit">
+                    <DataAnnotationsValidator />
+                    <RadzenStack Gap="1rem">
+                        <!-- Name -->
+                        <RadzenFormField Text="Name" Variant="Variant.Outlined">
+                            <ChildContent>
+                                <RadzenTextBox @bind-Value="product.Name" Placeholder="E.g: RGB Gaming Mouse" Style="width: 100%;" />
+                            </ChildContent>
+                            <Helper>
+                                <ValidationMessage For="@(() => product.Name)" />
+                            </Helper>
+                        </RadzenFormField>
+
+                        <!-- Description -->
+                        <RadzenFormField Text="Description" Variant="Variant.Outlined">
+                            <ChildContent>
+                                <RadzenTextArea @bind-Value="product.Description" Rows="3" Placeholder="Detailed product description" Style="width: 100%;" />
+                            </ChildContent>
+                            <Helper>
+                                <ValidationMessage For="@(() => product.Description)" />
+                            </Helper>
+                        </RadzenFormField>
+
+                        <!-- Category -->
+                        <RadzenFormField Text="Category" Variant="Variant.Outlined">
+                            <ChildContent>
+                                <RadzenDropDown @bind-Value="product.Category" Data="@categories" Placeholder="Select a category" Style="width: 100%;" />
+                            </ChildContent>
+                            <Helper>
+                                <ValidationMessage For="@(() => product.Category)" />
+                            </Helper>
+                        </RadzenFormField>
+
+                        <!-- Price and Stock -->
+                        <RadzenRow Gap="1rem">
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField Text="Price" Variant="Variant.Outlined">
+                                    <Start>
+                                        <RadzenIcon Icon="attach_money" />
+                                    </Start>
+                                    <ChildContent>
+                                        <RadzenNumeric @bind-Value="product.Price" Placeholder="0.00" Step="0.01" Style="width: 100%;" />
+                                    </ChildContent>
+                                    <Helper>
+                                        <ValidationMessage For="@(() => product.Price)" />
+                                    </Helper>
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField Text="Stock" Variant="Variant.Outlined">
+                                    <ChildContent>
+                                        <RadzenNumeric @bind-Value="product.Stock" Placeholder="0" TValue="int" Style="width: 100%;" />
+                                    </ChildContent>
+                                    <Helper>
+                                        <ValidationMessage For="@(() => product.Stock)" />
+                                    </Helper>
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        <!-- Preview Card -->
+                        @if (!string.IsNullOrWhiteSpace(product.Name) || !string.IsNullOrWhiteSpace(product.Description))
+                        {
+                            <RadzenAlert Shade="Shade.Light" Variant="Variant.Outlined" AlertStyle="AlertStyle.Info">
+                                <RadzenText TextStyle="TextStyle.Subtitle1" class="rz-mb-3">
+                                    <RadzenIcon Icon="visibility" /> Preview
+                                </RadzenText>
+                                <RadzenCard>
+                                    <RadzenStack Gap="0.5rem">
+                                        <RadzenText TextStyle="TextStyle.H6">
+                                            @(string.IsNullOrWhiteSpace(product.Name) ? "Product name" : product.Name)
+                                        </RadzenText>
+                                        <RadzenText TextStyle="TextStyle.Caption" class="rz-color-secondary">
+                                            @(string.IsNullOrWhiteSpace(product.Description) ? "Product description" : product.Description)
+                                        </RadzenText>
+                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                            <RadzenBadge Text="@(string.IsNullOrWhiteSpace(product.Category) ? "No category" : product.Category)" />
+                                            <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-color-success-darker">
+                                                $@product.Price.ToString("N2")
+                                            </RadzenText>
+                                        </RadzenStack>
+                                    </RadzenStack>
+                                </RadzenCard>
+                            </RadzenAlert>
+                        }
+
+                        <!-- Buttons -->
+                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                            <RadzenButton Click="@Cancel" ButtonStyle="ButtonStyle.Light" Text="Cancel" Icon="cancel" />
+                            <RadzenButton ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary"
+                                         Text="@(Id == null ? "Create Product" : "Update Product")"
+                                         Icon="save" Disabled="@saving" />
+                        </RadzenStack>
+                    </RadzenStack>
+                </EditForm>
+            </RadzenStack>
+        </RadzenCard>
+    </RadzenColumn>
+</RadzenRow>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private Models.Product product = new();
+    private bool saving = false;
+    private List<string> categories = new() { "Electronics", "Peripherals", "Monitors", "Audio", "Storage", "Accessories" };
+
+    protected override void OnInitialized()
+    {
+        if (Id != null)
+        {
+            var existingProduct = ProductService.GetById(Id.Value);
+            if (existingProduct != null)
+            {
+                product = existingProduct;
+            }
+            else
+            {
+                Navigation.NavigateTo("/products");
+            }
+        }
+    }
+
+    private async System.Threading.Tasks.Task HandleSubmit()
+    {
+        saving = true;
+        await System.Threading.Tasks.Task.Delay(500); // Simulate save
+
+        if (Id == null)
+        {
+            ProductService.Create(product);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Product Created",
+                Detail = $"Product '{product.Name}' has been created successfully.",
+                Duration = 4000
+            });
+        }
+        else
+        {
+            ProductService.Update(product);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Product Updated",
+                Detail = $"Product '{product.Name}' has been updated successfully.",
+                Duration = 4000
+            });
+        }
+
+        saving = false;
+        Navigation.NavigateTo("/products");
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/products");
+    }
+}

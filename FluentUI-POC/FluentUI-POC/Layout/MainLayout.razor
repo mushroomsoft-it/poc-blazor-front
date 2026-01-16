@@ -1,0 +1,35 @@
+﻿@inherits LayoutComponentBase
+
+<FluentLayout>
+    <FluentHeader Style="background-color: var(--accent-fill-rest);">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 20px;">
+            <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                <FluentLabel Typo="Typography.H4" style="color: white; margin: 0;">FluentUI POC</FluentLabel>
+            </FluentStack>
+            <FluentButton Appearance="Appearance.Lightweight" @onclick="ToggleNavMenu">
+            </FluentButton>
+        </div>
+    </FluentHeader>
+
+    <FluentStack Orientation="Orientation.Horizontal" Style="height: calc(100vh - 50px);">
+        @if (!collapseNavMenu)
+        {
+            <FluentNavMenu Width="250" Style="border-right: 1px solid var(--neutral-stroke-rest);">
+                <NavMenu />
+            </FluentNavMenu>
+        }
+
+        <FluentBodyContent Style="flex: 1; overflow-y: auto; padding: 20px;">
+            @Body
+        </FluentBodyContent>
+    </FluentStack>
+</FluentLayout>
+
+@code {
+    private bool collapseNavMenu = false;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

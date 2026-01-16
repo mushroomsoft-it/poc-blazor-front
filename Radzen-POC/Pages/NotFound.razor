@@ -1,0 +1,33 @@
+@page "/404"
+@inject NavigationManager Navigation
+
+<PageTitle>Not Found - Radzen POC</PageTitle>
+
+<RadzenStack Gap="2rem" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Style="min-height: 60vh;">
+    <RadzenIcon Icon="error_outline" Style="font-size: 8rem;" class="rz-color-danger-lighter" />
+
+    <RadzenStack Gap="0.5rem" AlignItems="AlignItems.Center" class="rz-text-align-center">
+        <RadzenText TextStyle="TextStyle.DisplayH3" class="rz-color-danger">404</RadzenText>
+        <RadzenText TextStyle="TextStyle.H5">Page Not Found</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body1" class="rz-color-secondary">
+            The page you are looking for doesn't exist or has been moved.
+        </RadzenText>
+    </RadzenStack>
+
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+        <RadzenButton Icon="home" Text="Go Home" ButtonStyle="ButtonStyle.Primary" Click="@GoHome" />
+        <RadzenButton Icon="arrow_back" Text="Go Back" ButtonStyle="ButtonStyle.Secondary" Click="@GoBack" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    private void GoHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo(Navigation.Uri.Replace("/404", ""));
+    }
+}

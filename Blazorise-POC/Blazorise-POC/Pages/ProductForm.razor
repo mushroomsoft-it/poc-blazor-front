@@ -1,0 +1,291 @@
+@page "/products/new"
+@page "/products/edit/{Id:int}"
+@inject ProductService ProductService
+@inject NavigationManager Navigation
+
+<PageTitle>@(Id == 0 ? "New Product" : "Edit Product") - Blazorise POC</PageTitle>
+
+<Container Fluid>
+    <Row>
+        <Column ColumnSize="ColumnSize.Is12.Is8.OnTablet.Is6.OnDesktop" Margin="Margin.IsAuto">
+            <Card>
+                <CardHeader>
+                    <CardTitle Size="4">
+                        <Icon Name="@(Id == 0 ? IconName.Add : IconName.Edit)" />
+                        @(Id == 0 ? "New Product" : "Edit Product")
+                    </CardTitle>
+                </CardHeader>
+                <CardBody>
+                    @if (product == null)
+                    {
+                        <Div Display="Display.Flex" Style="justify-content: center;" Padding="Padding.Is3.OnAll">
+                            <Div TextAlignment="TextAlignment.Center">
+                                <Icon Name="IconName.Sync" IconSize="IconSize.x2" />
+                                <Paragraph>Loading...</Paragraph>
+                            </Div>
+                        </Div>
+                    }
+                    else
+                    {
+                        <Validations @ref="validations" Mode="ValidationMode.Manual">
+                            <Validation>
+                                <Field>
+                                    <FieldLabel>Name <Text TextColor="TextColor.Danger">*</Text></FieldLabel>
+                                    <FieldBody>
+                                        <TextEdit @bind-Text="product.Name" Placeholder="Enter product name">
+                                            <Feedback>
+                                                <ValidationError>Name is required (minimum 3 characters)</ValidationError>
+                                            </Feedback>
+                                        </TextEdit>
+                                    </FieldBody>
+                                    <FieldHelp>Descriptive product name</FieldHelp>
+                                </Field>
+                            </Validation>
+
+                            <Validation>
+                                <Field>
+                                    <FieldLabel>Description</FieldLabel>
+                                    <FieldBody>
+                                        <MemoEdit @bind-Text="product.Description" Rows="4" Placeholder="Detailed product description" />
+                                    </FieldBody>
+                                </Field>
+                            </Validation>
+
+                            <Row>
+                                <Column ColumnSize="ColumnSize.Is12.Is6.OnTablet">
+                                    <Validation>
+                                        <Field>
+                                            <FieldLabel>Category <Text TextColor="TextColor.Danger">*</Text></FieldLabel>
+                                            <FieldBody>
+                                                <Select @bind-SelectedValue="product.Category">
+                                                    @foreach (var category in categories)
+                                                    {
+                                                        <SelectItem Value="@category">@category</SelectItem>
+                                                    }
+                                                </Select>
+                                                <FieldHelp TextColor="TextColor.Danger">@(string.IsNullOrEmpty(product.Category) ? "Must select a category" : "")</FieldHelp>
+                                            </FieldBody>
+                                        </Field>
+                                    </Validation>
+                                </Column>
+
+                                <Column ColumnSize="ColumnSize.Is12.Is6.OnTablet">
+                                    <Validation>
+                                        <Field>
+                                            <FieldLabel>Price <Text TextColor="TextColor.Danger">*</Text></FieldLabel>
+                                            <FieldBody>
+                                                <NumericEdit @bind-Value="product.Price" Decimals="2" Min="0" Placeholder="0.00">
+                                                    <Feedback>
+                                                        <ValidationError>Price must be greater than 0</ValidationError>
+                                                    </Feedback>
+                                                </NumericEdit>
+                                            </FieldBody>
+                                            <FieldHelp>Price in dollars</FieldHelp>
+                                        </Field>
+                                    </Validation>
+                                </Column>
+                            </Row>
+
+                            <Validation>
+                                <Field>
+                                    <FieldLabel>Stock <Text TextColor="TextColor.Danger">*</Text></FieldLabel>
+                                    <FieldBody>
+                                        <NumericEdit @bind-Value="product.Stock" Decimals="0" Min="0" Placeholder="0">
+                                            <Feedback>
+                                                <ValidationError>Stock must be greater than or equal to 0</ValidationError>
+                                            </Feedback>
+                                        </NumericEdit>
+                                    </FieldBody>
+                                    <FieldHelp>
+                                        @if (product.Stock < 20)
+                                        {
+                                            <Badge Color="Color.Warning">
+                                                <Icon Name="IconName.ExclamationTriangle" /> Low stock
+                                            </Badge>
+                                        }
+                                        else
+                                        {
+                                            <Badge Color="Color.Success">
+                                                <Icon Name="IconName.CheckCircle" /> Adequate stock
+                                            </Badge>
+                                        }
+                                    </FieldHelp>
+                                </Field>
+                            </Validation>
+
+                            @if (Id > 0)
+                            {
+                                <Field>
+                                    <FieldLabel>Creation Date</FieldLabel>
+                                    <FieldBody>
+                                        <TextEdit Text="@product.CreationDate.ToString("dd/MM/yyyy HH:mm")" ReadOnly />
+                                    </FieldBody>
+                                </Field>
+                            }
+
+                            @if (!string.IsNullOrEmpty(errorMessage))
+                            {
+                                <Alert Color="Color.Danger" Visible>
+                                    <Icon Name="IconName.TimesCircle" /> @errorMessage
+                                </Alert>
+                            }
+
+                            <Divider />
+
+                            <Field>
+                                <FieldBody>
+                                    <Buttons>
+                                        <Button Color="Color.Primary" Clicked="SaveProduct" Loading="saving">
+                                            <Icon Name="IconName.Save" /> @(Id == 0 ? "Create Product" : "Save Changes")
+                                        </Button>
+                                        <Button Color="Color.Secondary" Clicked="Cancel">
+                                            <Icon Name="IconName.Times" /> Cancel
+                                        </Button>
+                                    </Buttons>
+                                </FieldBody>
+                            </Field>
+                        </Validations>
+                    }
+                </CardBody>
+            </Card>
+
+            @if (Id == 0)
+            {
+                <Card Margin="Margin.Is3.FromTop">
+                    <CardBody>
+                        <Heading Size="HeadingSize.Is6">
+                            <Icon Name="IconName.InfoCircle" /> Information
+                        </Heading>
+                        <UnorderedList>
+                            <UnorderedListItem>Fields marked with <Text TextColor="TextColor.Danger">*</Text> are required</UnorderedListItem>
+                            <UnorderedListItem>Price must be a positive value</UnorderedListItem>
+                            <UnorderedListItem>Recommended to maintain a minimum stock of 20 units</UnorderedListItem>
+                        </UnorderedList>
+                    </CardBody>
+                </Card>
+            }
+        </Column>
+    </Row>
+</Container>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Product? product;
+    private List<string> categories = new();
+    private Validations? validations;
+    private bool saving = false;
+    private string errorMessage = "";
+
+    protected override void OnInitialized()
+    {
+        categories = ProductService.GetCategories();
+
+        if (Id == 0)
+        {
+            // Create new product
+            product = new Product
+            {
+                CreationDate = DateTime.Now,
+                Category = "",
+                Name = "",
+                Description = "",
+                Price = 0,
+                Stock = 0
+            };
+        }
+        else
+        {
+            // Load existing product
+            product = ProductService.GetById(Id);
+            if (product == null)
+            {
+                Navigation.NavigateTo("/products");
+            }
+        }
+    }
+
+    private async System.Threading.Tasks.Task SaveProduct()
+    {
+        errorMessage = "";
+
+        if (product == null)
+            return;
+
+        // Manual validation
+        if (!await ValidateProduct())
+        {
+            if (validations != null)
+            {
+                await validations.ValidateAll();
+            }
+            return;
+        }
+
+        saving = true;
+        StateHasChanged();
+
+        await System.Threading.Tasks.Task.Delay(300); // Simulate save
+
+        try
+        {
+            if (Id == 0)
+            {
+                ProductService.Create(product);
+            }
+            else
+            {
+                ProductService.Update(product);
+            }
+
+            Navigation.NavigateTo("/products");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving product: {ex.Message}";
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private async Task<bool> ValidateProduct()
+    {
+        var errors = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(product?.Name) || product.Name.Length < 3)
+        {
+            errors.Add("Name is required and must be at least 3 characters");
+        }
+
+        if (string.IsNullOrWhiteSpace(product?.Category))
+        {
+            errors.Add("Must select a category");
+        }
+
+        if (product?.Price <= 0)
+        {
+            errors.Add("Price must be greater than 0");
+        }
+
+        if (product?.Stock < 0)
+        {
+            errors.Add("Stock cannot be negative");
+        }
+
+        if (errors.Any())
+        {
+            errorMessage = string.Join(". ", errors);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/products");
+    }
+}

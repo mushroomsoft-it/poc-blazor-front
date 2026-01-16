@@ -1,0 +1,422 @@
+@page "/products"
+@inject ProductService ProductService
+@inject NavigationManager Navigation
+
+<PageTitle>Products - Blazorise POC</PageTitle>
+
+<Container Fluid>
+    <Heading Size="HeadingSize.Is3" Margin="Margin.Is3.FromBottom">Product Management</Heading>
+    <Divider />
+
+    <!-- Search bar and actions -->
+    <Row Margin="Margin.Is3.FromBottom">
+        <Column ColumnSize="ColumnSize.Is12.Is8.OnTablet">
+            <Field>
+                <FieldLabel>Search products</FieldLabel>
+                <TextEdit Placeholder="Search by name or category..." @bind-Text="searchTerm" />
+            </Field>
+        </Column>
+        <Column ColumnSize="ColumnSize.Is12.Is4.OnTablet" Display="Display.Flex" Style="align-items: flex-end;">
+            <Buttons>
+                <Button Color="Color.Primary" Clicked="SearchProducts">
+                    <Icon Name="IconName.Search" /> Search
+                </Button>
+                <Button Color="Color.Success" Clicked="CreateNew">
+                    <Icon Name="IconName.Add" /> New Product
+                </Button>
+            </Buttons>
+        </Column>
+    </Row>
+
+    <!-- Column Filters -->
+    <Card Margin="Margin.Is3.FromBottom">
+        <CardHeader>
+            <Div Display="Display.Flex" Style="justify-content: space-between; align-items: center;">
+                <Heading Size="HeadingSize.Is5" Margin="Margin.Is0">Column Filters</Heading>
+                <Button Color="Color.Secondary" Size="Size.Small" Clicked="ClearColumnFilters">
+                    <Icon Name="IconName.Clear" /> Clear Filters
+                </Button>
+            </Div>
+        </CardHeader>
+        <CardBody>
+            <Row>
+                <Column ColumnSize="ColumnSize.Is6.OnTablet.Is4.OnDesktop.Is3.OnWidescreen">
+                    <Field>
+                        <FieldLabel>ID</FieldLabel>
+                        <NumericEdit TValue="int?" Value="@filterID" ValueChanged="@((int? val) => { filterID = val; OnFilterChanged(); })" Placeholder="Filter by ID" />
+                    </Field>
+                </Column>
+                <Column ColumnSize="ColumnSize.Is6.OnTablet.Is4.OnDesktop.Is3.OnWidescreen">
+                    <Field>
+                        <FieldLabel>Name</FieldLabel>
+                        <TextEdit Text="@filterName" TextChanged="@((string val) => { filterName = val; OnFilterChanged(); })" Placeholder="Filter by name" />
+                    </Field>
+                </Column>
+                <Column ColumnSize="ColumnSize.Is6.OnTablet.Is4.OnDesktop.Is3.OnWidescreen">
+                    <Field>
+                        <FieldLabel>Category</FieldLabel>
+                        <Select TValue="string" SelectedValue="@filterCategory" SelectedValueChanged="@((string val) => { filterCategory = val; OnFilterChanged(); })">
+                            <SelectItem Value="@string.Empty">All Categories</SelectItem>
+                            @foreach (var category in availableCategories)
+                            {
+                                <SelectItem Value="@category">@category</SelectItem>
+                            }
+                        </Select>
+                    </Field>
+                </Column>
+                <Column ColumnSize="ColumnSize.Is6.OnTablet.Is4.OnDesktop.Is3.OnWidescreen">
+                    <Field>
+                        <FieldLabel>Price Min</FieldLabel>
+                        <NumericEdit TValue="decimal?" Value="@filterPriceMin" ValueChanged="@((decimal? val) => { filterPriceMin = val; OnFilterChanged(); })" Placeholder="Min price" Decimals="2" />
+                    </Field>
+                </Column>
+                <Column ColumnSize="ColumnSize.Is6.OnTablet.Is4.OnDesktop.Is3.OnWidescreen">
+                    <Field>
+                        <FieldLabel>Price Max</FieldLabel>
+                        <NumericEdit TValue="decimal?" Value="@filterPriceMax" ValueChanged="@((decimal? val) => { filterPriceMax = val; OnFilterChanged(); })" Placeholder="Max price" Decimals="2" />
+                    </Field>
+                </Column>
+                <Column ColumnSize="ColumnSize.Is6.OnTablet.Is4.OnDesktop.Is3.OnWidescreen">
+                    <Field>
+                        <FieldLabel>Stock Min</FieldLabel>
+                        <NumericEdit TValue="int?" Value="@filterStockMin" ValueChanged="@((int? val) => { filterStockMin = val; OnFilterChanged(); })" Placeholder="Min stock" />
+                    </Field>
+                </Column>
+                <Column ColumnSize="ColumnSize.Is6.OnTablet.Is4.OnDesktop.Is3.OnWidescreen">
+                    <Field>
+                        <FieldLabel>Stock Max</FieldLabel>
+                        <NumericEdit TValue="int?" Value="@filterStockMax" ValueChanged="@((int? val) => { filterStockMax = val; OnFilterChanged(); })" Placeholder="Max stock" />
+                    </Field>
+                </Column>
+            </Row>
+        </CardBody>
+    </Card>
+
+    @if (filteredProducts == null)
+    {
+        <Div Display="Display.Flex" Style="justify-content: center;" Padding="Padding.Is5.FromTop">
+            <Div TextAlignment="TextAlignment.Center">
+                <Icon Name="IconName.Sync" IconSize="IconSize.x3" />
+                <Paragraph>Loading products...</Paragraph>
+            </Div>
+        </Div>
+    }
+    else if (!filteredProducts.Any())
+    {
+        <Alert Color="Color.Info" Visible>
+            <Icon Name="IconName.InfoCircle" /> No products found.
+        </Alert>
+    }
+    else
+    {
+        <!-- Products table -->
+        <Card>
+            <CardBody>
+                <DataGrid TItem="Product"
+                          Data="@paginatedProducts"
+                          Responsive
+                          Striped
+                          Hoverable
+                          ShowPager
+                          PageSize="@pageSize"
+                          CurrentPage="@currentPage"
+                          TotalItems="@filteredProducts.Count"
+                          PagerPosition="DataGridPagerPosition.Bottom"
+                          PagerOptions="new DataGridPagerOptions { ButtonSize = Size.Small }">
+                    <DataGridColumns>
+                        <DataGridColumn Field="@nameof(Product.Id)" Caption="ID" Width="80px" />
+                        <DataGridColumn Field="@nameof(Product.Name)" Caption="Name" />
+                        <DataGridColumn Field="@nameof(Product.Category)" Caption="Category">
+                            <DisplayTemplate>
+                                <Badge Color="Color.Primary">@context.Category</Badge>
+                            </DisplayTemplate>
+                        </DataGridColumn>
+                        <DataGridColumn Field="@nameof(Product.Price)" Caption="Price">
+                            <DisplayTemplate>
+                                $@context.Price.ToString("N2")
+                            </DisplayTemplate>
+                        </DataGridColumn>
+                        <DataGridColumn Field="@nameof(Product.Stock)" Caption="Stock">
+                            <DisplayTemplate>
+                                <Badge Color="@(context.Stock < 20 ? Color.Warning : Color.Success)">
+                                    @context.Stock units
+                                </Badge>
+                            </DisplayTemplate>
+                        </DataGridColumn>
+                        <DataGridColumn Field="@nameof(Product.CreationDate)" Caption="Creation Date">
+                            <DisplayTemplate>
+                                @context.CreationDate.ToString("dd/MM/yyyy")
+                            </DisplayTemplate>
+                        </DataGridColumn>
+                        <DataGridColumn Caption="Actions" Width="200px">
+                            <DisplayTemplate>
+                                <Buttons>
+                                    <Button Color="Color.Primary" Size="Size.Small" Clicked="@(() => EditProduct(context.Id))">
+                                        <Icon Name="IconName.Edit" /> Edit
+                                    </Button>
+                                    <Button Color="Color.Danger" Size="Size.Small" Clicked="@(() => ShowDeleteConfirmation(context))">
+                                        <Icon Name="IconName.Delete" /> Delete
+                                    </Button>
+                                </Buttons>
+                            </DisplayTemplate>
+                        </DataGridColumn>
+                    </DataGridColumns>
+                </DataGrid>
+            </CardBody>
+        </Card>
+
+        <!-- Pagination info -->
+        <Div Margin="Margin.Is2.FromTop" Display="Display.Flex" Style="justify-content: space-between; align-items: center;">
+            <Small TextColor="TextColor.Muted">
+                Showing @((currentPage - 1) * pageSize + 1) - @Math.Min(currentPage * pageSize, filteredProducts.Count) of @filteredProducts.Count products
+            </Small>
+            <Buttons>
+                <Button Color="Color.Secondary" Size="Size.Small" Disabled="@(currentPage == 1)" Clicked="PreviousPage">
+                    <Icon Name="IconName.ChevronLeft" /> Previous
+                </Button>
+                <Button Color="Color.Secondary" Size="Size.Small" Disabled="@(currentPage >= totalPages)" Clicked="NextPage">
+                    Next <Icon Name="IconName.ChevronRight" />
+                </Button>
+            </Buttons>
+        </Div>
+    }
+
+    <!-- Delete confirmation modal -->
+    <Modal @ref="deleteModal">
+        <ModalContent Centered>
+            <ModalHeader>
+                <ModalTitle>Confirm Deletion</ModalTitle>
+                <CloseButton />
+            </ModalHeader>
+            <ModalBody>
+                <Paragraph>Are you sure you want to delete the product <Strong>@productToDelete?.Name</Strong>?</Paragraph>
+                <Alert Color="Color.Warning" Visible>
+                    <Icon Name="IconName.ExclamationTriangle" /> This action cannot be undone.
+                </Alert>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="CloseDeleteModal">Cancel</Button>
+                <Button Color="Color.Danger" Clicked="ConfirmDelete">
+                    <Icon Name="IconName.Delete" /> Delete
+                </Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+
+    <!-- Notification toast -->
+    @if (!string.IsNullOrEmpty(notificationMessage))
+    {
+        <Div Style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;">
+            <Alert Color="@notificationColor" Visible Dismissible>
+                @notificationMessage
+            </Alert>
+        </Div>
+    }
+</Container>
+
+@code {
+    private List<Product> products = new();
+    private List<Product> filteredProducts = new();
+    private List<Product> paginatedProducts = new();
+    private string searchTerm = "";
+
+    // Column filter variables
+    private int? filterID;
+    private string filterName = "";
+    private string filterCategory = "";
+    private decimal? filterPriceMin;
+    private decimal? filterPriceMax;
+    private int? filterStockMin;
+    private int? filterStockMax;
+    private List<string> availableCategories = new();
+
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages => (int)Math.Ceiling(filteredProducts.Count / (double)pageSize);
+
+    private Modal? deleteModal;
+    private Product? productToDelete;
+
+    private string notificationMessage = "";
+    private Color notificationColor = Color.Success;
+
+    protected override void OnInitialized()
+    {
+        LoadProducts();
+    }
+
+    private void LoadProducts()
+    {
+        products = ProductService.GetAll();
+        availableCategories = products
+            .Select(p => p.Category)
+            .Distinct()
+            .OrderBy(c => c)
+            .ToList();
+        SearchProducts();
+    }
+
+    private void SearchProducts()
+    {
+        // Apply global search filter first
+        IEnumerable<Product> result;
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            result = products;
+        }
+        else
+        {
+            result = ProductService.Search(searchTerm);
+        }
+
+        // Apply column filters
+        result = ApplyColumnFilters(result);
+
+        filteredProducts = result.ToList();
+        currentPage = 1;
+        UpdatePagination();
+    }
+
+    private IEnumerable<Product> ApplyColumnFilters(IEnumerable<Product> productsToFilter)
+    {
+        var result = productsToFilter;
+
+        // Filter by ID
+        if (filterID.HasValue)
+        {
+            result = result.Where(p => p.Id == filterID.Value);
+        }
+
+        // Filter by Name
+        if (!string.IsNullOrWhiteSpace(filterName))
+        {
+            result = result.Where(p => p.Name.Contains(filterName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Filter by Category
+        if (!string.IsNullOrWhiteSpace(filterCategory))
+        {
+            result = result.Where(p => p.Category.Equals(filterCategory, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Filter by Price Min
+        if (filterPriceMin.HasValue)
+        {
+            result = result.Where(p => p.Price >= filterPriceMin.Value);
+        }
+
+        // Filter by Price Max
+        if (filterPriceMax.HasValue)
+        {
+            result = result.Where(p => p.Price <= filterPriceMax.Value);
+        }
+
+        // Filter by Stock Min
+        if (filterStockMin.HasValue)
+        {
+            result = result.Where(p => p.Stock >= filterStockMin.Value);
+        }
+
+        // Filter by Stock Max
+        if (filterStockMax.HasValue)
+        {
+            result = result.Where(p => p.Stock <= filterStockMax.Value);
+        }
+
+        return result;
+    }
+
+    private void OnFilterChanged()
+    {
+        currentPage = 1;
+        SearchProducts();
+    }
+
+    private void ClearColumnFilters()
+    {
+        filterID = null;
+        filterName = "";
+        filterCategory = "";
+        filterPriceMin = null;
+        filterPriceMax = null;
+        filterStockMin = null;
+        filterStockMax = null;
+        SearchProducts();
+    }
+
+    private void UpdatePagination()
+    {
+        paginatedProducts = filteredProducts
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private void PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            UpdatePagination();
+        }
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < totalPages)
+        {
+            currentPage++;
+            UpdatePagination();
+        }
+    }
+
+    private void CreateNew()
+    {
+        Navigation.NavigateTo("/products/new");
+    }
+
+    private void EditProduct(int id)
+    {
+        Navigation.NavigateTo($"/products/edit/{id}");
+    }
+
+    private async System.Threading.Tasks.Task ShowDeleteConfirmation(Product product)
+    {
+        productToDelete = product;
+        if (deleteModal != null)
+        {
+            await deleteModal.Show();
+        }
+    }
+
+    private async System.Threading.Tasks.Task CloseDeleteModal()
+    {
+        if (deleteModal != null)
+        {
+            await deleteModal.Hide();
+        }
+        productToDelete = null;
+    }
+
+    private async System.Threading.Tasks.Task ConfirmDelete()
+    {
+        if (productToDelete != null)
+        {
+            ProductService.Delete(productToDelete.Id);
+            await CloseDeleteModal();
+            LoadProducts();
+            await ShowNotification($"Product '{productToDelete.Name}' deleted successfully", Color.Success);
+        }
+    }
+
+    private async System.Threading.Tasks.Task ShowNotification(string message, Color color)
+    {
+        notificationMessage = message;
+        notificationColor = color;
+        StateHasChanged();
+
+        await System.Threading.Tasks.Task.Delay(3000);
+        notificationMessage = "";
+        StateHasChanged();
+    }
+}

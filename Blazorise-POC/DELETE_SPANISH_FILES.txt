@@ -1,0 +1,25 @@
+The following Spanish files should be deleted manually:
+
+MODELS:
+- C:\Users\andre\Documents\MushroomSoft\LGC_Project\Pocs_frontend\Blazorise-POC\Blazorise-POC\Models\Producto.cs
+- C:\Users\andre\Documents\MushroomSoft\LGC_Project\Pocs_frontend\Blazorise-POC\Blazorise-POC\Models\Tarea.cs
+
+SERVICES:
+- C:\Users\andre\Documents\MushroomSoft\LGC_Project\Pocs_frontend\Blazorise-POC\Blazorise-POC\Services\ProductoService.cs
+- C:\Users\andre\Documents\MushroomSoft\LGC_Project\Pocs_frontend\Blazorise-POC\Blazorise-POC\Services\TareaService.cs
+- C:\Users\andre\Documents\MushroomSoft\LGC_Project\Pocs_frontend\Blazorise-POC\Blazorise-POC\Services\EstadisticasService.cs
+
+PAGES:
+- C:\Users\andre\Documents\MushroomSoft\LGC_Project\Pocs_frontend\Blazorise-POC\Blazorise-POC\Pages\Productos.razor
+- C:\Users\andre\Documents\MushroomSoft\LGC_Project\Pocs_frontend\Blazorise-POC\Blazorise-POC\Pages\ProductoForm.razor
+- C:\Users\andre\Documents\MushroomSoft\LGC_Project\Pocs_frontend\Blazorise-POC\Blazorise-POC\Pages\Tareas.razor
+- C:\Users\andre\Documents\MushroomSoft\LGC_Project\Pocs_frontend\Blazorise-POC\Blazorise-POC\Pages\TareaForm.razor
+- C:\Users\andre\Documents\MushroomSoft\LGC_Project\Pocs_frontend\Blazorise-POC\Blazorise-POC\Pages\Componentes.razor
+
+REPLACED WITH ENGLISH FILES:
+- Product.cs, Task.cs (Models)
+- ProductService.cs, TaskService.cs, StatisticsService.cs (Services)
+- Products.razor, ProductForm.razor, Tasks.razor, TaskForm.razor, Components.razor (Pages)
+- Home.razor (Updated)
+- NavMenu.razor (Updated)
+- Program.cs (Updated)

@@ -1,0 +1,316 @@
+@page "/tasks"
+@inject TaskService TaskService
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+
+<PageTitle>Tasks - MudBlazor POC</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">
+    <MudIcon Icon="@Icons.Material.Filled.Task" Class="mr-2" />
+    Tasks
+</MudText>
+
+<MudPaper Class="pa-4 mb-4" Elevation="2">
+    <MudGrid>
+        <MudItem xs="12" md="4">
+            <MudTextField @bind-Value="searchTerm"
+                          Label="Search tasks"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Immediate="true"
+                          OnDebounceIntervalElapsed="OnSearch"
+                          DebounceInterval="300" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect Label="Filter by Status"
+                       @bind-Value="selectedStatus"
+                       Variant="Variant.Outlined"
+                       Clearable="true"
+                       OnClearButtonClick="@(() => { selectedStatus = null; OnFilter(); })">
+                <MudSelectItem Value="@(Models.TaskStatus.Pending)">Pending</MudSelectItem>
+                <MudSelectItem Value="@(Models.TaskStatus.InProgress)">In Progress</MudSelectItem>
+                <MudSelectItem Value="@(Models.TaskStatus.Completed)">Completed</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect Label="Filter by Priority"
+                       @bind-Value="selectedPriority"
+                       Variant="Variant.Outlined"
+                       Clearable="true"
+                       OnClearButtonClick="@(() => { selectedPriority = null; OnFilter(); })">
+                <MudSelectItem Value="@(Models.TaskPriority.Low)">Low</MudSelectItem>
+                <MudSelectItem Value="@(Models.TaskPriority.Medium)">Medium</MudSelectItem>
+                <MudSelectItem Value="@(Models.TaskPriority.High)">High</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="2" Class="d-flex align-center">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       FullWidth="true"
+                       Href="/tasks/new">
+                New Task
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+    <MudDivider Class="my-4" />
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="3">
+            <MudTextField @bind-Value="filterTitle"
+                          Label="Filter by Title"
+                          Variant="Variant.Outlined"
+                          Clearable="true"
+                          Immediate="true"
+                          OnDebounceIntervalElapsed="OnFilter"
+                          DebounceInterval="300"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Title" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudTextField @bind-Value="filterDescription"
+                          Label="Filter by Description"
+                          Variant="Variant.Outlined"
+                          Clearable="true"
+                          Immediate="true"
+                          OnDebounceIntervalElapsed="OnFilter"
+                          DebounceInterval="300"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Description" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudDatePicker Date="filterDueDate"
+                           DateChanged="@OnDateFilterChanged"
+                           Label="Filter by Due Date"
+                           Variant="Variant.Outlined"
+                           Clearable="true"
+                           Adornment="Adornment.Start"
+                           AdornmentIcon="@Icons.Material.Filled.CalendarToday" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3" Class="d-flex align-center">
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       StartIcon="@Icons.Material.Filled.ClearAll"
+                       FullWidth="true"
+                       OnClick="ClearAllFilters">
+                Clear All Filters
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudTable Items="@filteredTasks"
+          Hover="true"
+          Dense="true"
+          Elevation="2">
+    <HeaderContent>
+        <MudTh>Task</MudTh>
+        <MudTh>Status</MudTh>
+        <MudTh>Priority</MudTh>
+        <MudTh>Due Date</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Task">
+            <MudText Typo="Typo.body2">
+                @if (context.Completed)
+                {
+                    <del><strong>@context.Title</strong></del>
+                }
+                else
+                {
+                    <strong>@context.Title</strong>
+                }
+            </MudText>
+            <MudText Typo="Typo.caption" Color="Color.Secondary">@context.Description</MudText>
+        </MudTd>
+        <MudTd DataLabel="Status">
+            <MudBadge Content="@context.Status.ToString()" Color="@GetStatusColor(context.Status)" />
+        </MudTd>
+        <MudTd DataLabel="Priority">
+            <MudBadge Content="@context.Priority.ToString()" Color="@GetPriorityColor(context.Priority)" Icon="@Icons.Material.Filled.Flag" />
+        </MudTd>
+        <MudTd DataLabel="Due Date">
+            @{
+                var daysRemaining = (context.DueDate - DateTime.Now).Days;
+            }
+            @if (context.Completed)
+            {
+                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.DueDate.ToString("MMM dd, yyyy")</MudText>
+            }
+            else if (daysRemaining < 0)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Error">
+                    <strong>Overdue (@Math.Abs(daysRemaining)d)</strong>
+                </MudText>
+            }
+            else if (daysRemaining == 0)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Warning">
+                    <strong>Due today</strong>
+                </MudText>
+            }
+            else if (daysRemaining <= 3)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Warning">
+                    Due in @daysRemaining day@(daysRemaining > 1 ? "s" : "")
+                </MudText>
+            }
+            else
+            {
+                <MudText Typo="Typo.caption">@context.DueDate.ToString("MMM dd, yyyy")</MudText>
+            }
+        </MudTd>
+        <MudTd DataLabel="Actions">
+            <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               OnClick="@(() => EditTask(context.Id))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                               Color="Color.Error"
+                               Size="Size.Small"
+                               OnClick="@(() => DeleteTask(context))" />
+            </MudButtonGroup>
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@if (!filteredTasks.Any())
+{
+    <MudPaper Class="pa-8 mt-4 text-center" Elevation="0">
+        <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Secondary" />
+        <MudText Typo="Typo.h6" Color="Color.Secondary">No tasks found</MudText>
+        @if (!string.IsNullOrWhiteSpace(searchTerm) || selectedStatus != null || selectedPriority != null ||
+             !string.IsNullOrWhiteSpace(filterTitle) || !string.IsNullOrWhiteSpace(filterDescription) || filterDueDate != null)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Try adjusting your filters</MudText>
+        }
+    </MudPaper>
+}
+
+@code {
+    private List<Models.Task> tasks = new();
+    private List<Models.Task> filteredTasks = new();
+    private string searchTerm = string.Empty;
+    private Models.TaskStatus? selectedStatus = null;
+    private Models.TaskPriority? selectedPriority = null;
+    private string filterTitle = string.Empty;
+    private string filterDescription = string.Empty;
+    private DateTime? filterDueDate = null;
+
+    protected override void OnInitialized()
+    {
+        LoadTasks();
+    }
+
+    private void LoadTasks()
+    {
+        tasks = TaskService.GetAll();
+        filteredTasks = tasks;
+    }
+
+    private void OnSearch()
+    {
+        OnFilter();
+    }
+
+    private void OnFilter()
+    {
+        filteredTasks = tasks;
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredTasks = TaskService.Search(searchTerm);
+        }
+
+        if (selectedStatus != null)
+        {
+            filteredTasks = filteredTasks.Where(t => t.Status == selectedStatus).ToList();
+        }
+
+        if (selectedPriority != null)
+        {
+            filteredTasks = filteredTasks.Where(t => t.Priority == selectedPriority).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterTitle))
+        {
+            filteredTasks = filteredTasks.Where(t =>
+                t.Title.Contains(filterTitle, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterDescription))
+        {
+            filteredTasks = filteredTasks.Where(t =>
+                t.Description.Contains(filterDescription, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        if (filterDueDate != null)
+        {
+            filteredTasks = filteredTasks.Where(t =>
+                t.DueDate.Date == filterDueDate.Value.Date).ToList();
+        }
+    }
+
+    private void EditTask(int id)
+    {
+        Navigation.NavigateTo($"/tasks/edit/{id}");
+    }
+
+    private async System.Threading.Tasks.Task DeleteTask(Models.Task task)
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            "Delete Task",
+            $"Are you sure you want to delete '{task.Title}'?",
+            yesText: "Delete",
+            cancelText: "Cancel");
+
+        if (result == true)
+        {
+            TaskService.Delete(task.Id);
+            LoadTasks();
+            OnFilter();
+        }
+    }
+
+    private Color GetStatusColor(Models.TaskStatus status)
+    {
+        return status switch
+        {
+            Models.TaskStatus.Completed => Color.Success,
+            Models.TaskStatus.InProgress => Color.Info,
+            _ => Color.Default
+        };
+    }
+
+    private Color GetPriorityColor(Models.TaskPriority priority)
+    {
+        return priority switch
+        {
+            Models.TaskPriority.High => Color.Error,
+            Models.TaskPriority.Medium => Color.Warning,
+            _ => Color.Success
+        };
+    }
+
+    private void OnDateFilterChanged(DateTime? date)
+    {
+        filterDueDate = date;
+        OnFilter();
+    }
+
+    private void ClearAllFilters()
+    {
+        searchTerm = string.Empty;
+        selectedStatus = null;
+        selectedPriority = null;
+        filterTitle = string.Empty;
+        filterDescription = string.Empty;
+        filterDueDate = null;
+        OnFilter();
+    }
+}

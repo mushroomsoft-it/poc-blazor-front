@@ -1,0 +1,316 @@
+@page "/tasks"
+@inject TaskService TaskService
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+
+<PageTitle>Tasks - FluentUI POC</PageTitle>
+
+<FluentStack Orientation="Orientation.Vertical" Width="100%">
+    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Style="justify-content: space-between;">
+        <FluentLabel Typo="Typography.H3">Task Management</FluentLabel>
+        <FluentButton Appearance="Appearance.Accent" OnClick="CreateTask">
+            New Task
+        </FluentButton>
+    </FluentStack>
+    <FluentDivider />
+
+    <!-- Search -->
+    <FluentCard Style="margin-top: 20px;">
+        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" Style="gap: 10px;">
+            <FluentTextField @bind-Value="searchTerm" Placeholder="Search tasks..." Style="min-width: 300px;">
+            </FluentTextField>
+            <FluentButton Appearance="Appearance.Accent" OnClick="Search">Search</FluentButton>
+            <FluentButton Appearance="Appearance.Outline" OnClick="ClearSearch">Clear</FluentButton>
+        </FluentStack>
+    </FluentCard>
+
+    <!-- Column Filters -->
+    <FluentCard Style="margin-top: 20px;">
+        <FluentLabel Typo="Typography.Body" Style="margin-bottom: 10px; font-weight: bold;">Column Filters</FluentLabel>
+        <FluentGrid Spacing="2" Style="margin-bottom: 10px;">
+            <FluentGridItem xs="12" sm="6" md="3">
+                <FluentTextField @bind-Value="filterTitle" Placeholder="Filter Title" Immediate="true" @bind-Value:after="OnFilterChanged" Style="width: 100%;" />
+            </FluentGridItem>
+            <FluentGridItem xs="12" sm="6" md="3">
+                <FluentTextField @bind-Value="filterDescription" Placeholder="Filter Description" Immediate="true" @bind-Value:after="OnFilterChanged" Style="width: 100%;" />
+            </FluentGridItem>
+            <FluentGridItem xs="12" sm="6" md="2">
+                <FluentSelect @bind-Value="filterStatus" TOption="string" @bind-Value:after="OnFilterChanged" Style="width: 100%;">
+                    <FluentOption Value="" TOption="string">All Statuses</FluentOption>
+                    <FluentOption Value="Pending" TOption="string">Pending</FluentOption>
+                    <FluentOption Value="InProgress" TOption="string">In Progress</FluentOption>
+                    <FluentOption Value="Completed" TOption="string">Completed</FluentOption>
+                </FluentSelect>
+            </FluentGridItem>
+            <FluentGridItem xs="12" sm="6" md="2">
+                <FluentSelect @bind-Value="filterPriority" TOption="string" @bind-Value:after="OnFilterChanged" Style="width: 100%;">
+                    <FluentOption Value="" TOption="string">All Priorities</FluentOption>
+                    <FluentOption Value="Low" TOption="string">Low</FluentOption>
+                    <FluentOption Value="Medium" TOption="string">Medium</FluentOption>
+                    <FluentOption Value="High" TOption="string">High</FluentOption>
+                </FluentSelect>
+            </FluentGridItem>
+            <FluentGridItem xs="12" sm="6" md="2">
+                <input type="date" class="fluent-text-field" @bind="filterDueDate" @bind:after="OnFilterChanged" style="width: 100%; height: 32px;" />
+            </FluentGridItem>
+        </FluentGrid>
+        <FluentButton Appearance="Appearance.Outline" OnClick="ClearColumnFilters">Clear Filters</FluentButton>
+    </FluentCard>
+
+    <!-- Task table -->
+    <FluentCard Style="margin-top: 20px;">
+        @if (paginatedTasks == null || !paginatedTasks.Any())
+        {
+            <FluentLabel>No tasks available.</FluentLabel>
+        }
+        else
+        {
+            <FluentDataGrid Items="@paginatedTasks.AsQueryable()" Style="width: 100%;">
+                <TemplateColumn Title="Done" Style="width: 50px;">
+                    <CellTemplate>
+                        <FluentCheckbox @bind-Value="context.Completed" @onchange="@(() => ToggleCompleted(context))" />
+                    </CellTemplate>
+                </TemplateColumn>
+                <PropertyColumn Property="@(t => t.Title)" Title="Title" Sortable="true" />
+                <PropertyColumn Property="@(t => t.Description)" Title="Description" />
+                <TemplateColumn Title="Status" Sortable="true">
+                    <CellTemplate>
+                        <FluentBadge Appearance="Appearance.Accent" BackgroundColor="@GetStatusColor(context.Status)">
+                            @context.Status.ToString().Replace("InProgress", "In Progress")
+                        </FluentBadge>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Priority" Sortable="true">
+                    <CellTemplate>
+                        <FluentBadge Appearance="Appearance.Neutral" BackgroundColor="@GetPriorityColor(context.Priority)">
+                            @context.Priority
+                        </FluentBadge>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Due Date" Sortable="true">
+                    <CellTemplate>
+                        @if (!context.Completed && context.DueDate < DateTime.Now)
+                        {
+                            <FluentLabel Style="color: var(--error); font-weight: bold;">
+                                @context.DueDate.ToString("dd/MM/yyyy") (OVERDUE)
+                            </FluentLabel>
+                        }
+                        else
+                        {
+                            <FluentLabel>@context.DueDate.ToString("dd/MM/yyyy")</FluentLabel>
+                        }
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Actions">
+                    <CellTemplate>
+                        <FluentStack Orientation="Orientation.Horizontal" Style="gap: 5px;">
+                            <FluentButton Appearance="Appearance.Lightweight" OnClick="@(() => EditTask(context.Id))">
+                                Edit
+                            </FluentButton>
+                            <FluentButton Appearance="Appearance.Lightweight" OnClick="@(() => DeleteTask(context))">
+                                Delete
+                            </FluentButton>
+                        </FluentStack>
+                    </CellTemplate>
+                </TemplateColumn>
+            </FluentDataGrid>
+
+            <!-- Pagination -->
+            <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Style="justify-content: space-between; margin-top: 20px;">
+                <FluentLabel>Showing @paginatedTasks.Count() of @filteredTasks.Count tasks</FluentLabel>
+                <FluentStack Orientation="Orientation.Horizontal" Style="gap: 10px;">
+                    <FluentButton Appearance="Appearance.Outline" Disabled="@(currentPage == 1)" OnClick="PreviousPage">
+                        Previous
+                    </FluentButton>
+                    <FluentLabel>Page @currentPage of @totalPages</FluentLabel>
+                    <FluentButton Appearance="Appearance.Outline" Disabled="@(currentPage == totalPages)" OnClick="NextPage">
+                        Next
+                    </FluentButton>
+                </FluentStack>
+            </FluentStack>
+        }
+    </FluentCard>
+</FluentStack>
+
+@code {
+    private List<Models.Task> tasks = new();
+    private List<Models.Task> filteredTasks = new();
+    private List<Models.Task> paginatedTasks = new();
+    private string searchTerm = string.Empty;
+    private int currentPage = 1;
+    private int tasksPerPage = 10;
+    private int totalPages => (int)Math.Ceiling((double)filteredTasks.Count / tasksPerPage);
+
+    // Column filters
+    private string filterTitle = string.Empty;
+    private string filterDescription = string.Empty;
+    private string filterStatus = string.Empty;
+    private string filterPriority = string.Empty;
+    private DateTime? filterDueDate;
+
+    protected override void OnInitialized()
+    {
+        LoadTasks();
+    }
+
+    private void LoadTasks()
+    {
+        tasks = TaskService.GetAll();
+        ApplyFilters();
+    }
+
+    private void Search()
+    {
+        currentPage = 1;
+        ApplyFilters();
+    }
+
+    private void ClearSearch()
+    {
+        searchTerm = string.Empty;
+        Search();
+    }
+
+    private void OnFilterChanged()
+    {
+        currentPage = 1;
+        ApplyFilters();
+    }
+
+    private void ClearColumnFilters()
+    {
+        filterTitle = string.Empty;
+        filterDescription = string.Empty;
+        filterStatus = string.Empty;
+        filterPriority = string.Empty;
+        filterDueDate = null;
+        OnFilterChanged();
+    }
+
+    private void ApplyFilters()
+    {
+        // Start with all tasks
+        filteredTasks = tasks;
+
+        // Apply global search filter
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredTasks = filteredTasks.Where(t =>
+                t.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                t.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        // Apply column filters
+        if (!string.IsNullOrWhiteSpace(filterTitle))
+        {
+            filteredTasks = filteredTasks.Where(t =>
+                t.Title.Contains(filterTitle, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterDescription))
+        {
+            filteredTasks = filteredTasks.Where(t =>
+                t.Description.Contains(filterDescription, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterStatus))
+        {
+            var status = Enum.Parse<Models.TaskStatus>(filterStatus);
+            filteredTasks = filteredTasks.Where(t => t.Status == status).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterPriority))
+        {
+            var priority = Enum.Parse<Models.TaskPriority>(filterPriority);
+            filteredTasks = filteredTasks.Where(t => t.Priority == priority).ToList();
+        }
+
+        if (filterDueDate.HasValue)
+        {
+            filteredTasks = filteredTasks.Where(t =>
+                t.DueDate.Date == filterDueDate.Value.Date
+            ).ToList();
+        }
+
+        UpdatePagination();
+    }
+
+    private void UpdatePagination()
+    {
+        paginatedTasks = filteredTasks
+            .Skip((currentPage - 1) * tasksPerPage)
+            .Take(tasksPerPage)
+            .ToList();
+    }
+
+    private void PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            UpdatePagination();
+        }
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < totalPages)
+        {
+            currentPage++;
+            UpdatePagination();
+        }
+    }
+
+    private void ToggleCompleted(Models.Task task)
+    {
+        TaskService.ToggleCompleted(task.Id);
+        LoadTasks();
+    }
+
+    private void CreateTask()
+    {
+        Navigation.NavigateTo("/tasks/new");
+    }
+
+    private void EditTask(int id)
+    {
+        Navigation.NavigateTo($"/tasks/edit/{id}");
+    }
+
+    private async System.Threading.Tasks.Task DeleteTask(Models.Task task)
+    {
+        var dialog = await DialogService.ShowConfirmationAsync($"Are you sure you want to delete '{task.Title}'?", "Delete Task", "Delete", "Cancel");
+        var result = await dialog.Result;
+
+        if (!result.Cancelled)
+        {
+            TaskService.Delete(task.Id);
+            LoadTasks();
+        }
+    }
+
+    private string GetStatusColor(Models.TaskStatus status)
+    {
+        return status switch
+        {
+            Models.TaskStatus.Pending => "var(--warning)",
+            Models.TaskStatus.InProgress => "var(--accent-fill-rest)",
+            Models.TaskStatus.Completed => "var(--success)",
+            _ => "var(--neutral-fill-rest)"
+        };
+    }
+
+    private string GetPriorityColor(Models.TaskPriority priority)
+    {
+        return priority switch
+        {
+            Models.TaskPriority.High => "var(--error)",
+            Models.TaskPriority.Medium => "var(--warning)",
+            Models.TaskPriority.Low => "var(--success)",
+            _ => "var(--neutral-fill-rest)"
+        };
+    }
+}

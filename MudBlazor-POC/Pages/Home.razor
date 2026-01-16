@@ -1,0 +1,204 @@
+@page "/"
+@inject StatisticsService StatsService
+@inject NavigationManager Navigation
+
+<PageTitle>Dashboard - MudBlazor POC</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">
+    <MudIcon Icon="@Icons.Material.Filled.Dashboard" Class="mr-2" />
+    Dashboard
+</MudText>
+<MudText Typo="Typo.body1" Class="mb-4">Welcome to the MudBlazor POC dashboard</MudText>
+
+<MudGrid>
+    <!-- Statistics Cards -->
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2">
+            <MudCardContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Total Products</MudText>
+                <MudText Typo="Typo.h4">@StatsService.GetTotalProducts()</MudText>
+                <MudIcon Icon="@Icons.Material.Filled.Inventory" Color="Color.Primary" Size="Size.Large" />
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/products">View Products</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2">
+            <MudCardContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Inventory Value</MudText>
+                <MudText Typo="Typo.h4">$@StatsService.GetTotalValue().ToString("N2")</MudText>
+                <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Color="Color.Success" Size="Size.Large" />
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Text" Color="Color.Success" Disabled>Financial Report</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2">
+            <MudCardContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Total Tasks</MudText>
+                <MudText Typo="Typo.h4">@StatsService.GetTotalTasks()</MudText>
+                <MudIcon Icon="@Icons.Material.Filled.Task" Color="Color.Info" Size="Size.Large" />
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Text" Color="Color.Info" Href="/tasks">View Tasks</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2">
+            <MudCardContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Task Completion</MudText>
+                <MudText Typo="Typo.h4">@StatsService.GetTaskCompletionRate().ToString("N0")%</MudText>
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Large" />
+            </MudCardContent>
+            <MudCardActions>
+                <MudProgressLinear Color="Color.Success" Value="@StatsService.GetTaskCompletionRate()" />
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+
+    <!-- Alerts -->
+    <MudItem xs="12" md="6">
+        <MudCard Elevation="2">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">
+                        <MudIcon Icon="@Icons.Material.Filled.Warning" Class="mr-2" />
+                        Inventory Alerts
+                    </MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                @if (StatsService.GetLowStockCount() > 0)
+                {
+                    <MudAlert Severity="Severity.Warning" Variant="Variant.Filled">
+                        <strong>@StatsService.GetLowStockCount()</strong> products have low stock (less than 10 units)
+                    </MudAlert>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Success" Variant="Variant.Outlined">
+                        All products have adequate stock levels
+                    </MudAlert>
+                }
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" md="6">
+        <MudCard Elevation="2">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">
+                        <MudIcon Icon="@Icons.Material.Filled.Alarm" Class="mr-2" />
+                        Task Alerts
+                    </MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                @if (StatsService.GetOverdueTasks() > 0)
+                {
+                    <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mb-2">
+                        <strong>@StatsService.GetOverdueTasks()</strong> tasks are overdue
+                    </MudAlert>
+                }
+                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+                    <strong>@StatsService.GetPendingTasks()</strong> tasks are pending
+                </MudAlert>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <!-- Quick Actions -->
+    <MudItem xs="12">
+        <MudCard Elevation="2">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">
+                        <MudIcon Icon="@Icons.Material.Filled.FlashOn" Class="mr-2" />
+                        Quick Actions
+                    </MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               Href="/products/new">
+                        New Product
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Secondary"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               Href="/tasks/new">
+                        New Task
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Inventory"
+                               Href="/products">
+                        Manage Products
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Secondary"
+                               StartIcon="@Icons.Material.Filled.Task"
+                               Href="/tasks">
+                        Manage Tasks
+                    </MudButton>
+                </MudStack>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <!-- Info Section -->
+    <MudItem xs="12">
+        <MudCard Elevation="2">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">
+                        <MudIcon Icon="@Icons.Material.Filled.Info" Class="mr-2" />
+                        About This POC
+                    </MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudText Typo="Typo.body1" GutterBottom="true">
+                    This is a Proof of Concept (POC) built with <strong>MudBlazor</strong>, a comprehensive Material Design component library for Blazor.
+                </MudText>
+                <MudText Typo="Typo.body2">
+                    Features demonstrated in this POC:
+                </MudText>
+                <MudStack Spacing="1" Class="mt-2">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" />
+                        <MudText Typo="Typo.body2">Product management with CRUD operations</MudText>
+                    </MudStack>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" />
+                        <MudText Typo="Typo.body2">Task management with priorities and statuses</MudText>
+                    </MudStack>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" />
+                        <MudText Typo="Typo.body2">Dashboard with real-time statistics</MudText>
+                    </MudStack>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" />
+                        <MudText Typo="Typo.body2">Responsive Material Design components</MudText>
+                    </MudStack>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" />
+                        <MudText Typo="Typo.body2">Form validation and data binding</MudText>
+                    </MudStack>
+                </MudStack>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
