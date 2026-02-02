@@ -1,0 +1,197 @@
+@typeparam TItem
+@using Bootstrap_POC.Components.DataGrid.Columns
+@using Bootstrap_POC.Components.DataGrid.Filters
+@using Bootstrap_POC.Components.DataGrid.Extensions
+
+<CascadingValue Value="this">
+    @Columns
+</CascadingValue>
+
+<div class="table-responsive-wrapper">
+    <div class="table-scroll-container">
+        <table class="table table-striped table-hover mb-0 @(FixedLayout ? "table-fixed" : "")">
+        @if (FixedLayout && _resolvedColumns.Any())
+        {
+            <colgroup>
+                @foreach (var column in _resolvedColumns)
+                {
+                    @if (!string.IsNullOrEmpty(column.Width))
+                    {
+                        <col style="width: @column.Width" />
+                    }
+                    else
+                    {
+                        <col />
+                    }
+                }
+                @if (RowActions != null)
+                {
+                    <col style="width: 120px" />
+                }
+            </colgroup>
+        }
+        <thead class="table-light">
+            <tr class="position-relative">
+                @if (_resolvedColumns.Any())
+                {
+                    @foreach (var column in _resolvedColumns)
+                    {
+                        <th class="@column.GetAlignmentClass() position-relative">
+                            <div class="d-flex align-items-center justify-content-between gap-1">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1 min-width-0">
+                                    @if (column.Sortable)
+                                    {
+                                        <span class="cursor-pointer user-select-none text-truncate" @onclick="@(() => HandleSortClick(column.PropertyName))">
+                                            @column.GetDisplayTitle()
+                                            <i class="@GetSortIconClass(column.PropertyName) ms-1"></i>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-truncate">@column.GetDisplayTitle()</span>
+                                    }
+                                </div>
+                                @if (ShowFilters && column.Filterable && _filterMetadata.ContainsKey(column.PropertyName))
+                                {
+                                    <div class="flex-shrink-0">
+                                        <ColumnFilter TItem="TItem"
+                                                    PropertyName="@column.PropertyName"
+                                                    FilterMetadata="@_filterMetadata[column.PropertyName]"
+                                                    IsActive="@IsFilterActive(column.PropertyName)"
+                                                    OnFilterChanged="@(EventCallback.Factory.Create<(string PropertyName, FilterState? FilterState)>(this, async args => await HandleFilterChanged(args.PropertyName, args.FilterState)))" />
+                                    </div>
+                                }
+                            </div>
+                        </th>
+                    }
+                    @if (RowActions != null)
+                    {
+                        <th class="text-center">Actions</th>
+                    }
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @if (Items?.Any() == true && _resolvedColumns.Any())
+            {
+                @foreach (var item in Items)
+                {
+                    <tr>
+                        @foreach (var column in _resolvedColumns)
+                        {
+                            <td class="@column.GetAlignmentClass()">
+                                @if (column.Template != null)
+                                {
+                                    @column.Template(item)
+                                }
+                                else
+                                {
+                                    @column.GetFormattedValue(item)
+                                }
+                            </td>
+                        }
+                        @if (RowActions != null)
+                        {
+                            <td class="text-center">
+                                @RowActions(item)
+                            </td>
+                        }
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="@(_resolvedColumns.Count + (RowActions != null ? 1 : 0))" class="text-center py-5">
+                        @if (EmptyContent != null)
+                        {
+                            @EmptyContent
+                        }
+                        else
+                        {
+                            <div class="text-muted">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>No data available</p>
+                            </div>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+        </table>
+    </div>
+</div>
+
+@if (TotalCount > PageSize)
+{
+    <GridPagination CurrentPage="@CurrentPage"
+                   TotalCount="@TotalCount"
+                   PageSize="@PageSize"
+                   OnPageChanged="@HandlePageChangedInternal" />
+}
+
+<style>
+    .table-responsive-wrapper {
+        overflow: visible !important;
+        position: relative;
+    }
+
+    /* Wrapper for horizontal scrolling without clipping dropdowns */
+    .table-scroll-container {
+        overflow-x: auto;
+        overflow-y: visible;
+    }
+
+    /* Ensure dropdowns are never clipped */
+    .dropdown-menu.show {
+        position: absolute !important;
+        z-index: 1055 !important;
+        transform: none !important;
+    }
+
+    .table-fixed {
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    .cursor-pointer {
+        cursor: pointer;
+    }
+
+    .user-select-none {
+        user-select: none;
+    }
+
+    /* Ensure filter dropdowns can overflow properly */
+    .table thead th {
+        position: relative;
+        overflow: visible;
+        vertical-align: middle;
+        padding: 0.75rem;
+    }
+
+    .min-width-0 {
+        min-width: 0;
+    }
+
+    .text-truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .table thead {
+        position: relative;
+    }
+
+    .table tbody td {
+        vertical-align: middle;
+        padding: 0.75rem;
+    }
+
+    /* Prevent layout shifts during loading */
+    .table-striped > tbody > tr:nth-of-type(odd) > * {
+        --bs-table-accent-bg: var(--bs-table-striped-bg);
+        color: var(--bs-table-striped-color);
+    }
+</style>

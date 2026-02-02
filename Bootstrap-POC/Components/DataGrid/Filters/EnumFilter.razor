@@ -1,0 +1,51 @@
+<div class="mb-2">
+    <label class="form-label">Select Value</label>
+    <select class="form-select form-select-sm" @bind="selectedValue">
+        <option value="">-- All --</option>
+        @if (EnumValues != null)
+        {
+            @foreach (var enumValue in EnumValues)
+            {
+                <option value="@enumValue">@enumValue</option>
+            }
+        }
+    </select>
+</div>
+
+<div class="d-flex gap-2">
+    <button class="btn btn-sm btn-primary" @onclick="ApplyFilter">Apply</button>
+    <button class="btn btn-sm btn-secondary" @onclick="ClearFilter">Clear</button>
+</div>
+
+@code {
+    [Parameter] public string PropertyName { get; set; } = string.Empty;
+    [Parameter] public Array? EnumValues { get; set; }
+    [Parameter] public Type PropertyType { get; set; } = typeof(object);
+    [Parameter] public EventCallback<FilterState?> OnFilterChanged { get; set; }
+
+    private string? selectedValue;
+
+    private async System.Threading.Tasks.Task ApplyFilter()
+    {
+        if (string.IsNullOrWhiteSpace(selectedValue))
+            return;
+
+        var underlyingType = Nullable.GetUnderlyingType(PropertyType) ?? PropertyType;
+        var enumValue = Enum.Parse(underlyingType, selectedValue);
+
+        var filterState = new FilterState
+        {
+            PropertyName = PropertyName,
+            Operator = FilterOperator.Equals,
+            Value = enumValue
+        };
+
+        await OnFilterChanged.InvokeAsync(filterState);
+    }
+
+    private async System.Threading.Tasks.Task ClearFilter()
+    {
+        selectedValue = null;
+        await OnFilterChanged.InvokeAsync(null);
+    }
+}

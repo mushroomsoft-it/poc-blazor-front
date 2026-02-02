@@ -1,0 +1,77 @@
+@using System.Globalization
+
+<div class="mb-2">
+    <label class="form-label">Operator</label>
+    <select class="form-select form-select-sm" @bind="selectedOperator">
+        <option value="@FilterOperator.Equals">Equals</option>
+        <option value="@FilterOperator.GreaterThan">Greater Than</option>
+        <option value="@FilterOperator.LessThan">Less Than</option>
+        <option value="@FilterOperator.Between">Between</option>
+    </select>
+</div>
+
+<div class="mb-2">
+    <label class="form-label">Value</label>
+    <input type="number" class="form-control form-control-sm" @bind="value1" step="any" />
+</div>
+
+@if (selectedOperator == FilterOperator.Between)
+{
+    <div class="mb-2">
+        <label class="form-label">And</label>
+        <input type="number" class="form-control form-control-sm" @bind="value2" step="any" />
+    </div>
+}
+
+<div class="d-flex gap-2">
+    <button class="btn btn-sm btn-primary" @onclick="ApplyFilter">Apply</button>
+    <button class="btn btn-sm btn-secondary" @onclick="ClearFilter">Clear</button>
+</div>
+
+@code {
+    [Parameter] public string PropertyName { get; set; } = string.Empty;
+    [Parameter] public Type PropertyType { get; set; } = typeof(int);
+    [Parameter] public EventCallback<FilterState?> OnFilterChanged { get; set; }
+
+    private FilterOperator selectedOperator = FilterOperator.Equals;
+    private string? value1;
+    private string? value2;
+
+    private async System.Threading.Tasks.Task ApplyFilter()
+    {
+        if (string.IsNullOrWhiteSpace(value1))
+            return;
+
+        var filterState = new FilterState
+        {
+            PropertyName = PropertyName,
+            Operator = selectedOperator
+        };
+
+        var underlyingType = Nullable.GetUnderlyingType(PropertyType) ?? PropertyType;
+
+        try
+        {
+            filterState.Value = Convert.ChangeType(value1, underlyingType, CultureInfo.InvariantCulture);
+
+            if (selectedOperator == FilterOperator.Between && !string.IsNullOrWhiteSpace(value2))
+            {
+                filterState.Value2 = Convert.ChangeType(value2, underlyingType, CultureInfo.InvariantCulture);
+            }
+
+            await OnFilterChanged.InvokeAsync(filterState);
+        }
+        catch
+        {
+            // Invalid conversion, ignore
+        }
+    }
+
+    private async System.Threading.Tasks.Task ClearFilter()
+    {
+        value1 = null;
+        value2 = null;
+        selectedOperator = FilterOperator.Equals;
+        await OnFilterChanged.InvokeAsync(null);
+    }
+}

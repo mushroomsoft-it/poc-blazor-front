@@ -1,0 +1,78 @@
+@typeparam TItem
+@using Bootstrap_POC.Components.DataGrid.Extensions
+@inject IJSRuntime JSRuntime
+
+<div class="dropdown">
+    <button class="btn btn-sm @(IsActive ? "btn-primary" : "btn-outline-secondary") dropdown-toggle"
+            type="button"
+            id="filter-@PropertyName"
+            data-bs-toggle="dropdown"
+            aria-expanded="false">
+        <i class="fas fa-filter"></i>
+    </button>
+    <div class="dropdown-menu dropdown-menu-end p-3 shadow" style="min-width: 300px; max-height: 400px; overflow-y: auto; z-index: 1055 !important;" aria-labelledby="filter-@PropertyName" @onclick:stopPropagation="true">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">Filter @PropertyName</h6>
+            <button type="button" class="btn-close" @onclick="CloseDropdown"></button>
+        </div>
+        <hr class="my-2" />
+
+        @switch (FilterMetadata.FilterType)
+        {
+            case FilterType.Numeric:
+                <NumericFilter PropertyName="@PropertyName"
+                             PropertyType="@FilterMetadata.PropertyType"
+                             OnFilterChanged="@HandleFilterChanged" />
+                break;
+
+            case FilterType.Date:
+                <DateFilter PropertyName="@PropertyName"
+                          PropertyType="@FilterMetadata.PropertyType"
+                          OnFilterChanged="@HandleFilterChanged" />
+                break;
+
+            case FilterType.String:
+                @if (FilterMetadata.StringOptions != null && FilterMetadata.StringOptions.Any())
+                {
+                    <StringSelectionFilter PropertyName="@PropertyName"
+                                         Options="@FilterMetadata.StringOptions"
+                                         OnFilterChanged="@HandleFilterChanged" />
+                }
+                else
+                {
+                    <StringFilter PropertyName="@PropertyName"
+                                OnFilterChanged="@HandleFilterChanged" />
+                }
+                break;
+
+            case FilterType.Enum:
+                <EnumFilter PropertyName="@PropertyName"
+                          EnumValues="@FilterMetadata.EnumValues"
+                          PropertyType="@FilterMetadata.PropertyType"
+                          OnFilterChanged="@HandleFilterChanged" />
+                break;
+
+            case FilterType.Boolean:
+                <BooleanFilter PropertyName="@PropertyName"
+                             OnFilterChanged="@HandleFilterChanged" />
+                break;
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string PropertyName { get; set; } = string.Empty;
+    [Parameter] public FilterMetadata FilterMetadata { get; set; } = new();
+    [Parameter] public bool IsActive { get; set; }
+    [Parameter] public EventCallback<(string PropertyName, FilterState? FilterState)> OnFilterChanged { get; set; }
+
+    private async System.Threading.Tasks.Task HandleFilterChanged(FilterState? filterState)
+    {
+        await OnFilterChanged.InvokeAsync((PropertyName, filterState));
+    }
+
+    private async System.Threading.Tasks.Task CloseDropdown()
+    {
+        await JSRuntime.InvokeVoidAsync("closeDropdown", $"filter-{PropertyName}");
+    }
+}

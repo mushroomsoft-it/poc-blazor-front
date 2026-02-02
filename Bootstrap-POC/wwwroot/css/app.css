@@ -129,10 +129,11 @@ body {
 
 /* Card Enhancements */
 .card {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    transition: box-shadow 0.2s ease-in-out;
 }
 
-.card:hover {
+/* Only apply hover transform to cards that don't contain dropdowns */
+.card.card-hoverable:hover {
     transform: translateY(-2px);
 }
 
@@ -182,12 +183,18 @@ body {
     transition: all 0.15s ease-in-out;
 }
 
-.btn:hover {
+/* Only apply hover transform to buttons that won't break dropdown positioning */
+.btn:not(.filter-panel-container .btn):hover {
     transform: translateY(-1px);
 }
 
-.btn:active {
+.btn:not(.filter-panel-container .btn):active {
     transform: translateY(0);
+}
+
+/* Ensure filter panel is above everything */
+.filter-panel-container {
+    z-index: auto;
 }
 
 /* Badge Enhancements */
