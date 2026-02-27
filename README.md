@@ -64,6 +64,33 @@ dotnet run
 
 Navigate to `https://localhost:5001` or the URL shown in the terminal.
 
+### PocSyncfusion
+
+```bash
+cd PocSyncfusion
+dotnet run
+```
+
+Navigate to `https://localhost:5184` or the URL shown in the terminal.
+
+### PocTeeChart
+
+```bash
+cd PocTeeChart
+dotnet run
+```
+
+Navigate to `https://localhost:5184` or the URL shown in the terminal.
+
+### PocVegaLite
+
+```bash
+cd PocVegaLite
+dotnet run
+```
+
+Navigate to `https://localhost:5184` or the URL shown in the terminal.
+
 ## Features Implemented in Each POC
 
 - **Dashboard**: Statistics overview with cards
