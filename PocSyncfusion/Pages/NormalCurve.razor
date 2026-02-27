@@ -1,0 +1,114 @@
+@page "/normal-curve"
+@using Syncfusion.Blazor.Charts
+
+<div class="normalcurve-container">
+    <h2>Normal Distribution Curve - Empirical Rule 68-95-99.7</h2>
+
+    <SfChart Title="Standard Normal Distribution (μ=0, σ=1)" Width="100%" Height="500px">
+
+        <!-- Tooltip (use Syncfusion placeholders; avoid JS functions like toFixed) -->
+        <ChartTooltipSettings Enable="true" Format="X: <b>${point.x}</b><br/>Density: <b>${point.y}</b>" Shared="false">
+        </ChartTooltipSettings>
+
+        <!-- Legend -->
+        <ChartLegendSettings Visible="true" Position="LegendPosition.Top" Background="white">
+        </ChartLegendSettings>
+
+        <!-- X Axis -->
+        <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Double" Minimum="-4" Maximum="4" Interval="1"
+                           Title="Standard Deviations (σ)" LabelFormat="{value}σ">
+            <ChartAxisMajorGridLines Width="1" Color="#e0e0e0"></ChartAxisMajorGridLines>
+        </ChartPrimaryXAxis>
+
+        <!-- Y Axis -->
+        <ChartPrimaryYAxis Title="Probability Density" LabelFormat="{value}">
+            <ChartAxisLineStyle Width="2"></ChartAxisLineStyle>
+        </ChartPrimaryYAxis>
+
+        <ChartSeriesCollection>
+            <!-- Normal Curve -->
+            <ChartSeries DataSource="@NormalData" Name="Gaussian Curve" XName="X" YName="Y" Type="ChartSeriesType.Line"
+                         Width="3" Fill="#FF6F00">
+                <ChartMarker Visible="false"></ChartMarker>
+            </ChartSeries>
+        </ChartSeriesCollection>
+    </SfChart>
+
+    <!-- Empirical Rule Information -->
+    <div
+        style="margin-top: 20px; padding: 20px; background-color: #f9f9f9; border-radius: 5px; border-left: 4px solid #FF6F00;">
+        <h4>📐 Empirical Rule (68-95-99.7)</h4>
+        <ul style="margin: 10px 0; line-height: 1.8;">
+            <li><strong>68%</strong> of values fall within <strong>±1σ</strong> (one standard deviation)</li>
+            <li><strong>95%</strong> of values fall within <strong>±2σ</strong> (two standard deviations)</li>
+            <li><strong>99.7%</strong> of values fall within <strong>±3σ</strong> (three standard deviations)</li>
+        </ul>
+    </div>
+
+    <!-- Statistics -->
+    <div
+        style="margin-top: 15px; padding: 20px; background-color: #f0f7ff; border-radius: 5px; border-left: 4px solid #1976d2;">
+        <h4>📈 Parameters</h4>
+        <p><strong>Mean (μ):</strong> 0</p>
+        <p><strong>Standard Deviation (σ):</strong> 1</p>
+        <p><strong>Max Density:</strong> @MaxDensity.ToString("F4")</p>
+        <p><strong>Data Range:</strong> -4σ to +4σ</p>
+    </div>
+</div>
+
+<style>
+    .normalcurve-container {
+        padding: 20px;
+        background: linear-gradient(135deg, #fdf5e6 0%, #fff8f0 100%);
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .normalcurve-container h2 {
+        color: #333;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .normalcurve-container h4 {
+        color: #555;
+        margin-top: 0;
+        margin-bottom: 10px;
+    }
+
+    .normalcurve-container ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+
+    .normalcurve-container li {
+        margin: 8px 0;
+    }
+
+    .normalcurve-container p {
+        margin: 8px 0;
+    }
+</style>
+
+@code {
+
+    public List<PointData> NormalData = new();
+    public double MaxDensity { get; set; }
+
+    protected override void OnInitialized()
+    {
+        MaxDensity = 1 / Math.Sqrt(2 * Math.PI); // ≈ 0.3989
+
+        for (double x = -4; x <= 4; x += 0.1)
+        {
+            double y = MaxDensity * Math.Exp(-0.5 * x * x);
+            NormalData.Add(new PointData { X = x, Y = y });
+        }
+    }
+
+    public class PointData
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+    }
+}

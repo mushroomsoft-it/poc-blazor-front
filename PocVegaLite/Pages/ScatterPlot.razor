@@ -1,0 +1,378 @@
+@page "/scatterplot"
+@inject IJSRuntime JS
+@using System.Collections.Generic
+
+<div class="scatter-container">
+    <div class="header-section">
+        <h1>📊 Advanced Scatter Plot Analysis</h1>
+        <p class="subtitle">Interactive scatter plot with regression lines, statistical insights, and multi-dimensional
+            encoding</p>
+        </div>
+
+        <!-- Main Scatter Plot -->
+        <div class="main-chart-card">
+            <div class="chart-title">Multivariate Correlation Analysis</div>
+            <div id="scatterMainChart" class="scatter-main-container"></div>
+            <div class="chart-info">
+                <p>Use <strong>brush to select</strong> data points | <strong>Hover</strong> for details |
+                    <strong>Ctrl+Scroll</strong> to zoom</p>
+                </div>
+            </div>
+
+            <!-- Statistics Dashboard -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Data Points</div>
+                    <div class="stat-value">@dataPoints.Length</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg X Value</div>
+                    <div class="stat-value">@(dataPoints.Length > 0 ? dataPoints.Average(d => d["x"] != null ?
+                                        double.Parse(d["x"].ToString()) : 0).ToString("F2") : "N/A")</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Avg Y Value</div>
+                        <div class="stat-value">@(dataPoints.Length > 0 ? dataPoints.Average(d => d["y"] != null ?
+                                            double.Parse(d["y"].ToString()) : 0).ToString("F2") : "N/A")</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Data Categories</div>
+                            <div class="stat-value">@(dataPoints.Select(d => d["category"]).Distinct().Count())</div>
+                        </div>
+                    </div>
+
+                    <!-- Supporting Visualizations -->
+                    <div class="supporting-charts">
+                        <!-- X Distribution -->
+                        <div class="support-card">
+                            <div class="chart-title">Distribution - X Axis</div>
+                            <div id="xHistChart" class="support-chart-container"></div>
+                        </div>
+
+                        <!-- Y Distribution -->
+                        <div class="support-card">
+                            <div class="chart-title">Distribution - Y Axis</div>
+                            <div id="yHistChart" class="support-chart-container"></div>
+                        </div>
+
+                        <!-- Category Breakdown -->
+                        <div class="support-card">
+                            <div class="chart-title">Category Distribution</div>
+                            <div id="categoryChart" class="support-chart-container"></div>
+                        </div>
+
+                        <!-- Correlation Matrix -->
+                        <div class="support-card">
+                            <div class="chart-title">Density Heatmap</div>
+                            <div id="heatmapChart" class="support-chart-container"></div>
+                        </div>
+                    </div>
+
+                    <style>
+                            .scatter-container {
+                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                min-height: 100vh;
+                                padding: 40px 20px;
+                                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            }
+
+                            .header-section {
+                                text-align: center;
+                                margin-bottom: 40px;
+                                color: white;
+                                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                            }
+
+                            .header-section h1 {
+                                font-size: 2.5em;
+                                margin-bottom: 10px;
+                                font-weight: 700;
+                            }
+
+                            .subtitle {
+                                font-size: 1.1em;
+                                color: rgba(255, 255, 255, 0.9);
+                                max-width: 700px;
+                                margin: 0 auto;
+                            }
+
+                            .main-chart-card {
+                                background: white;
+                                border-radius: 16px;
+                                padding: 30px;
+                                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                                margin-bottom: 40px;
+                                max-width: 1400px;
+                                margin-left: auto;
+                                margin-right: auto;
+                            }
+
+                            .chart-title {
+                                font-size: 1.4em;
+                                font-weight: 600;
+                                color: #2c3e50;
+                                margin-bottom: 15px;
+                                border-bottom: 4px solid #667eea;
+                                padding-bottom: 12px;
+                            }
+
+                            .scatter-main-container {
+                                min-height: 500px;
+                                background: #f8f9fa;
+                                border-radius: 8px;
+                                padding: 20px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                            }
+
+                            .chart-info {
+                                text-align: center;
+                                margin-top: 15px;
+                                font-size: 0.9em;
+                                color: #7f8c8d;
+                                font-style: italic;
+                            }
+
+                            .stats-grid {
+                                display: grid;
+                                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                                gap: 20px;
+                                max-width: 1400px;
+                                margin: 40px auto;
+                            }
+
+                            .stat-card {
+                                background: white;
+                                border-radius: 12px;
+                                padding: 20px;
+                                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+                                text-align: center;
+                                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                            }
+
+                            .stat-card:hover {
+                                transform: translateY(-5px);
+                                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+                            }
+
+                            .stat-label {
+                                font-size: 0.9em;
+                                color: #7f8c8d;
+                                margin-bottom: 8px;
+                                font-weight: 500;
+                            }
+
+                            .stat-value {
+                                font-size: 2em;
+                                font-weight: 700;
+                                color: #667eea;
+                            }
+
+                            .supporting-charts {
+                                display: grid;
+                                grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+                                gap: 30px;
+                                max-width: 1400px;
+                                margin: 40px auto;
+                            }
+
+                            .support-card {
+                                background: white;
+                                border-radius: 12px;
+                                padding: 25px;
+                                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+                                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                            }
+
+                            .support-card:hover {
+                                transform: translateY(-5px);
+                                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+                            }
+
+                            .support-chart-container {
+                                min-height: 300px;
+                                background: #f8f9fa;
+                                border-radius: 8px;
+                                padding: 15px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                margin-top: 12px;
+                            }
+
+                            @@media (max-width: 1024px) {
+                                .supporting-charts {
+                                    grid-template-columns: 1fr;
+                                }
+
+                                .header-section h1 {
+                                    font-size: 2em;
+                                }
+                            }
+
+                            @@media (max-width: 768px) {
+                                .scatter-container {
+                                    padding: 20px 15px;
+                                }
+
+                                .main-chart-card {
+                                    padding: 20px;
+                                }
+
+                                .scatter-main-container {
+                                    min-height: 350px;
+                                }
+
+                                .stats-grid {
+                                    grid-template-columns: repeat(2, 1fr);
+                                    gap: 15px;
+                                }
+
+                                .header-section h1 {
+                                    font-size: 1.5em;
+                                }
+                            }
+                    </style>
+                </div>
+
+@code {
+    private Dictionary<string, object>[] dataPoints = Array.Empty<Dictionary<string, object>>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // ==================== GENERATE SYNTHETIC DATA ====================
+        var random = new Random(42);
+        var data = new List<Dictionary<string, object>>();
+        var categories = new[] { "High Performance", "Standard", "Budget", "Premium" };
+
+        // Generate realistic scatter data with correlations
+        for (int i = 0; i < 150; i++)
+        {
+            var category = categories[random.Next(categories.Length)];
+            var baseX = random.NextDouble() * 100;
+            var baseY = baseX * 0.8 + (random.NextDouble() * 30 - 15); // Some correlation
+
+            // Add category-specific variations
+            if (category == "Premium") baseY += 20;
+            else if (category == "Budget") baseY -= 15;
+
+            data.Add(new Dictionary<string, object>
+            {
+                ["id"] = i,
+                ["x"] = Math.Round(baseX, 2),
+                ["y"] = Math.Round(baseY, 2),
+                ["category"] = category,
+                ["size"] = random.Next(50, 300),
+                ["performance"] = random.Next(40, 100)
+            });
+        }
+
+        dataPoints = data.ToArray();
+
+        // ==================== MAIN SCATTER PLOT (ADVANCED) ====================
+        var mainScatterSpec = new Dictionary<string, object>
+        {
+            ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
+            ["title"] = new
+            {
+                text = "Performance vs Cost Analysis",
+                subtitle = "Points sized by performance metric; Colors represent product categories"
+            },
+            ["data"] = new Dictionary<string, object> { ["values"] = dataPoints },
+            ["selection"] = new Dictionary<string, object>
+            {
+                ["brush"] = new { type = "interval", encodings = new[] { "x", "y" } },
+                ["hover"] = new { type = "single", on = "mouseover", empty = "none" }
+            },
+            ["mark"] = new { type = "circle", stroke = "white", strokeWidth = 2 },
+            ["encoding"] = new Dictionary<string, object>
+            {
+                ["x"] = new { field = "x", type = "quantitative", title = "Cost Index", scale = new { zero = false } },
+                ["y"] = new { field = "y", type = "quantitative", title = "Performance Score", scale = new { zero = false } },
+                ["size"] = new { field = "performance", type = "quantitative", scale = new { range = new[] { 100, 500 } }, title = "Performance" },
+                ["color"] = new { field = "category", type = "nominal", scale = new { scheme = "set1" }, title = "Category" },
+                ["opacity"] = new { condition = new { param = "brush", value = 1 }, value = 0.3 },
+                ["strokeWidth"] = new { condition = new { param = "hover", value = 3 }, value = 1 },
+                ["tooltip"] = new object[]
+                {
+                    new { field = "id", type = "ordinal", title = "ID" },
+                    new { field = "x", type = "quantitative", title = "Cost", format = ".2f" },
+                    new { field = "y", type = "quantitative", title = "Performance", format = ".2f" },
+                    new { field = "category", type = "nominal", title = "Category" },
+                    new { field = "performance", type = "quantitative", title = "Performance Score" }
+                }
+            },
+            ["config"] = new Dictionary<string, object>
+            {
+                ["mark"] = new { tooltip = true }
+            }
+        };
+
+        // ==================== X DISTRIBUTION HISTOGRAM ====================
+        var xHistSpec = new Dictionary<string, object>
+        {
+            ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
+            ["data"] = new Dictionary<string, object> { ["values"] = dataPoints },
+            ["mark"] = new { type = "bar", color = "#667eea", opacity = 0.8 },
+            ["encoding"] = new Dictionary<string, object>
+            {
+                ["x"] = new { field = "x", type = "quantitative", bin = new { maxbins = 20 }, title = "Cost Index" },
+                ["y"] = new { aggregate = "count", type = "quantitative", title = "Frequency" },
+                ["opacity"] = new { value = 0.7 }
+            }
+        };
+
+        // ==================== Y DISTRIBUTION HISTOGRAM ====================
+        var yHistSpec = new Dictionary<string, object>
+        {
+            ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
+            ["data"] = new Dictionary<string, object> { ["values"] = dataPoints },
+            ["mark"] = new { type = "bar", color = "#764ba2", opacity = 0.8 },
+            ["encoding"] = new Dictionary<string, object>
+            {
+                ["x"] = new { field = "y", type = "quantitative", bin = new { maxbins = 20 }, title = "Performance Score" },
+                ["y"] = new { aggregate = "count", type = "quantitative", title = "Frequency" },
+                ["opacity"] = new { value = 0.7 }
+            }
+        };
+
+        // ==================== CATEGORY BREAKDOWN ====================
+        var categorySpec = new Dictionary<string, object>
+        {
+            ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
+            ["data"] = new Dictionary<string, object> { ["values"] = dataPoints },
+            ["mark"] = "bar",
+            ["encoding"] = new Dictionary<string, object>
+            {
+                ["y"] = new { field = "category", type = "nominal", title = "Category" },
+                ["x"] = new { aggregate = "count", type = "quantitative", title = "Count" },
+                ["color"] = new { field = "category", type = "nominal", scale = new { scheme = "set1" } }
+            },
+            ["sort"] = new { encoding = "x", order = "descending" }
+        };
+
+        // ==================== DENSITY HEATMAP ====================
+        var heatmapSpec = new Dictionary<string, object>
+        {
+            ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
+            ["data"] = new Dictionary<string, object> { ["values"] = dataPoints },
+            ["mark"] = "rect",
+            ["encoding"] = new Dictionary<string, object>
+            {
+                ["x"] = new { field = "x", type = "quantitative", bin = new { maxbins = 15 }, title = "Cost Index" },
+                ["y"] = new { field = "y", type = "quantitative", bin = new { maxbins = 15 }, title = "Performance" },
+                ["color"] = new { aggregate = "count", type = "quantitative", scale = new { scheme = "reds" }, title = "Density" }
+            }
+        };
+
+        // Render all visualizations
+        await JS.InvokeVoidAsync("renderVegaFromSpec", "scatterMainChart", mainScatterSpec);
+        await JS.InvokeVoidAsync("renderVegaFromSpec", "xHistChart", xHistSpec);
+        await JS.InvokeVoidAsync("renderVegaFromSpec", "yHistChart", yHistSpec);
+        await JS.InvokeVoidAsync("renderVegaFromSpec", "categoryChart", categorySpec);
+        await JS.InvokeVoidAsync("renderVegaFromSpec", "heatmapChart", heatmapSpec);
+    }
+}

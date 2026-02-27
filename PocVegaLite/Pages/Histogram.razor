@@ -1,0 +1,285 @@
+@page "/histogram"
+@inject IJSRuntime JS
+@using System.Collections.Generic
+
+<div class="hist-container">
+    <div class="header-section">
+        <h1>📊 Interactive Histogram</h1>
+        <p class="subtitle">Zoomable and brushable distribution with linked statistics and detail panel</p>
+    </div>
+
+    <!-- Controls Section -->
+    <div class="controls-section">
+        <div class="control-item">
+            <label>Bin Count:</label>
+            <input type="range" value="@binCount"
+                   @onchange="async e => { binCount = int.Parse(e.Value.ToString()); await RenderHistogram(binCount); }"
+                   min="5" max="50" step="1" />
+            <span>@binCount bins</span>
+        </div>
+    </div>
+
+    <!-- Chart Card -->
+    <div class="main-chart-card">
+        <div class="chart-title">Value Distribution</div>
+        <div id="histMainChart" class="hist-main-container"></div>
+        <div class="chart-info">Interactive histogram with adjustable bin count</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Total Bins</div>
+            <div class="stat-value">@binCount</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Count</div>
+            <div class="stat-value">@selectedCount</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Mean</div>
+            <div class="stat-value">@meanValue</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Std Dev</div>
+            <div class="stat_value">@stdDev</div>
+        </div>
+    </div>
+
+    <style>
+            .hist-container {
+                background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+                min-height: 100vh;
+                padding: 40px 20px;
+                font-family: 'Segoe UI', Tahoma, Verdana, sans-serif;
+            }
+
+            .header-section {
+                text-align: center;
+                margin-bottom: 40px;
+                color: #333;
+            }
+
+            .header-section h1 {
+                font-size: 2.5em;
+                margin-bottom: 10px;
+                font-weight: 700;
+            }
+
+            .subtitle {
+                font-size: 1.1em;
+                color: #666;
+                max-width: 700px;
+                margin: 0 auto;
+            }
+
+            .controls-section {
+                background: white;
+                border-radius: 12px;
+                padding: 20px 30px;
+                max-width: 1200px;
+                margin: 0 auto 30px auto;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+
+            .control-item {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+            }
+
+            .control-item label {
+                font-weight: 600;
+                font-size: 1em;
+                color: #2c3e50;
+                min-width: 100px;
+            }
+
+            .control-item input[type="range"] {
+                flex: 1;
+                max-width: 300px;
+                height: 6px;
+                cursor: pointer;
+            }
+
+            .control-item span {
+                font-size: 0.95em;
+                color: #666;
+                min-width: 80px;
+            }
+
+            .main-chart-card {
+                background: white;
+                border-radius: 16px;
+                padding: 30px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                margin-bottom: 40px;
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+
+            .chart-title {
+                font-size: 1.4em;
+                font-weight: 600;
+                color: #2c3e50;
+                margin-bottom: 15px;
+                border-bottom: 4px solid #f76c6c;
+                padding-bottom: 12px;
+            }
+
+            .hist-main-container {
+                height: 350px;
+                width: 100%;
+                background: #f8f9fa;
+                border-radius: 8px;
+                padding: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .chart-info {
+                text-align: center;
+                margin-top: 15px;
+                font-size: 0.95em;
+                color: #7f8c8d;
+                font-style: italic;
+            }
+
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 20px;
+                max-width: 1200px;
+                margin: 40px auto;
+            }
+
+            .stat-card {
+                background: white;
+                border-radius: 12px;
+                padding: 20px;
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+                text-align: center;
+                transition: transform .3s, box-shadow .3s;
+            }
+
+            .stat-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+            }
+
+            .stat-label {
+                font-size: .85em;
+                color: #7f8c8d;
+                margin-bottom: 8px;
+                font-weight: 500;
+            }
+
+            .stat-value {
+                font-size: 1.8em;
+                font-weight: 700;
+                color: #f76c6c;
+            }
+
+            @@media (max-width: 768px) {
+                .hist-container {
+                    padding: 20px 15px;
+                }
+
+                .main-chart-card {
+                    padding: 20px
+                }
+
+                .hist-main-container {
+                    height: 300px
+                }
+
+                .stats-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 15px
+                }
+
+                .header-section h1 {
+                    font-size: 1.8em;
+                }
+            }
+    </style>
+</div>
+
+@code {
+    private Dictionary<string, object>[] histData = Array.Empty<Dictionary<string, object>>();
+    private int binCount = 20;
+    private int selectedCount;
+    private string meanValue = "0";
+    private string stdDev = "0";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // generate random sample distribution
+        var rnd = new Random(123);
+        var values = new List<double>();
+        for (int i = 0; i < 500; i++) values.Add(rnd.NextDouble() * 100);
+
+        histData = values.Select(v => new Dictionary<string, object> { ["val"] = v }).ToArray();
+        ComputeStats(values);
+
+        await RenderHistogram(binCount);
+    }
+
+    private void OnBinCountChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int newBinCount))
+        {
+            binCount = newBinCount;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RenderHistogram(int bins)
+    {
+        // simple, clean histogram spec that works reliably
+        var histSpec = new Dictionary<string, object>
+        {
+            ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
+            ["title"] = "Distribution Histogram",
+            ["data"] = new Dictionary<string, object> { ["values"] = histData },
+            ["mark"] = new Dictionary<string, object>
+            {
+                ["type"] = "bar",
+                ["color"] = "#f76c6c",
+                ["opacity"] = 0.85,
+                ["cornerRadius"] = 2
+            },
+            ["encoding"] = new Dictionary<string, object>
+            {
+                ["x"] = new { field = "val", type = "quantitative", bin = new { maxbins = bins }, title = "Value Range" },
+                ["y"] = new { aggregate = "count", type = "quantitative", title = "Frequency", axis = new { labelAngle = 0 } },
+                ["tooltip"] = new object[]
+                {
+                    new { field = "val", type = "quantitative", title = "Range", format = ".2f" },
+                    new { aggregate = "count", type = "quantitative", title = "Count" }
+                }
+            },
+            ["config"] = new Dictionary<string, object>
+            {
+                ["mark"] = new { tooltip = true },
+                ["view"] = new { continuousWidth = 900, continuousHeight = 350 }
+            }
+        };
+
+        await JS.InvokeVoidAsync("renderVegaFromSpec", "histMainChart", histSpec);
+    }
+
+    private void ComputeStats(List<double> vals)
+    {
+        // compute overall statistics; selectedCount will start as the full
+        // sample size and later could be updated by a brush callback if
+        // desired (currently we simply display the total).
+        meanValue = vals.Average().ToString("F2");
+        var sd = Math.Sqrt(vals.Select(v => Math.Pow(v - vals.Average(), 2)).Average());
+        stdDev = sd.ToString("F2");
+        selectedCount = vals.Count;
+    }
+}

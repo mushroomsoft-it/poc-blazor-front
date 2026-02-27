@@ -1,0 +1,487 @@
+@page "/linechart"
+@inject IJSRuntime JS
+@using System.Collections.Generic
+
+<div class="line-container">
+    <div class="header-section">
+        <h1>📈 Advanced Time Series Analysis</h1>
+        <p class="subtitle">Interactive multi-series line chart with moving averages, confidence bands, and detailed
+            statistical insights</p>
+        </div>
+
+        <!-- Main Interactive Line Chart -->
+        <div class="main-chart-card">
+            <div class="controls-bar">
+                <div class="control-group">
+                    <label><input type="checkbox"
+                                      @onchange="@((ChangeEventArgs e) => toggleMovingAverage = (bool)e.Value)" /> Show Moving
+                        Average</label>
+                    </div>
+                    <div class="control-group">
+                        <label><input type="checkbox"
+                                          @onchange="@((ChangeEventArgs e) => toggleConfidenceBand = (bool)e.Value)" /> Show Confidence
+                            Band</label>
+                        </div>
+                    </div>
+
+                    <div class="chart-title">Multi-Series Revenue Trends</div>
+                    <div id="lineMainChart" class="line-main-container"></div>
+                    <div class="chart-info">
+                        <p>💡 <strong>Brush</strong> on chart to zoom | <strong>Hover</strong> for exact values | <strong>Click
+                            legend</strong> to filter series</p>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Dashboard -->
+                    <div class="stats-dashboard">
+                        <div class="stat-card">
+                            <div class="stat-label">Data Points</div>
+                            <div class="stat-value">@timeSeriesData.Length</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Average Value</div>
+                            <div class="stat-value">@(timeSeriesData.Length > 0 ? timeSeriesData.Average(d => d["value"] != null ?
+                                                                                                                                                                                                                                                double.Parse(d["value"].ToString()) : 0).ToString("F2") : "N/A")</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Max Value</div>
+                                <div class="stat-value">@(timeSeriesData.Length > 0 ? timeSeriesData.Max(d => d["value"] != null ?
+                                                                                                                                                                                                                                                                            double.Parse(d["value"].ToString()) : 0).ToString("F2") : "N/A")</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Min Value</div>
+                                    <div class="stat-value">@(timeSeriesData.Length > 0 ? timeSeriesData.Min(d => d["value"] != null ?
+                                                                                                                                                                                                                                                                                                        double.Parse(d["value"].ToString()) : 0).ToString("F2") : "N/A")</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-label">Series Count</div>
+                                        <div class="stat-value">@(timeSeriesData.Select(d => d["series"]).Distinct().Count())</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-label">Trend Direction</div>
+                                        <div class="stat-value trend-@(lastValueGreaterThanFirst ? "up" : "down")">@(lastValueGreaterThanFirst ? "📈                Up" : "📉 Down")</div>
+                                    </div>
+                                </div>
+
+                                <!-- Supporting Visualizations -->
+                                <div class="supporting-charts">
+                                    <!-- Detail View with Points -->
+                                    <div class="support-card">
+                                        <div class="chart-title">Detailed View - Points Highlighted</div>
+                                        <div id="detailChart" class="support-chart-container"></div>
+                                    </div>
+
+                                    <!-- Volatility Analysis -->
+                                    <div class="support-card">
+                                        <div class="chart-title">Daily Change Analysis</div>
+                                        <div id="volatilityChart" class="support-chart-container"></div>
+                                    </div>
+
+                                    <!-- Series Comparison -->
+                                    <div class="support-card">
+                                        <div class="chart-title">Series Comparison - Bar Chart</div>
+                                        <div id="comparisonChart" class="support-chart-container"></div>
+                                    </div>
+
+                                    <!-- Cumulative Growth -->
+                                    <div class="support-card">
+                                        <div class="chart-title">Cumulative Growth Index</div>
+                                        <div id="cumulativeChart" class="support-chart-container"></div>
+                                    </div>
+                                </div>
+
+                                <style>
+                                        .line-container {
+                                            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+                                            min-height: 100vh;
+                                            padding: 40px 20px;
+                                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                                        }
+
+                                        .header-section {
+                                            text-align: center;
+                                            margin-bottom: 40px;
+                                            color: white;
+                                            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                                        }
+
+                                        .header-section h1 {
+                                            font-size: 2.5em;
+                                            margin-bottom: 10px;
+                                            font-weight: 700;
+                                        }
+
+                                        .subtitle {
+                                            font-size: 1.1em;
+                                            color: rgba(255, 255, 255, 0.9);
+                                            max-width: 800px;
+                                            margin: 0 auto;
+                                        }
+
+                                        .main-chart-card {
+                                            background: white;
+                                            border-radius: 16px;
+                                            padding: 20px 30px;
+                                            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+                                            margin-bottom: 40px;
+                                            width: 100%;
+                                            max-width: 1200px;
+                                            margin-left: auto;
+                                            margin-right: auto;
+                                            overflow: hidden;
+                                            box-sizing: border-box;
+                                            display: flex;
+                                            gap: 20px;
+                                            margin-bottom: 20px;
+                                            padding: 15px;
+                                            background: #f8f9fa;
+                                            border-radius: 8px;
+                                        }
+
+                                        .control-group {
+                                            display: flex;
+                                            align-items: center;
+                                            gap: 8px;
+                                        }
+
+                                        .control-group input[type="checkbox"] {
+                                            width: 18px;
+                                            height: 18px;
+                                            cursor: pointer;
+                                        }
+
+                                        .control-group label {
+                                            font-size: 0.95em;
+                                            color: #2c3e50;
+                                            cursor: pointer;
+                                            font-weight: 500;
+                                        }
+
+                                        .chart-title {
+                                            font-size: 1.4em;
+                                            font-weight: 600;
+                                            color: #2c3e50;
+                                            margin-bottom: 15px;
+                                            border-bottom: 4px solid #2a5298;
+                                            padding-bottom: 12px;
+                                        }
+
+                                        .line-main-container {
+                                            height: 350px;
+                                            max-width: 100%;
+                                            border-radius: 8px;
+                                            padding: 20px;
+                                            display: flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                        }
+
+                                        .chart-info {
+                                            text-align: center;
+                                            margin-top: 15px;
+                                            font-size: 0.95em;
+                                            color: #7f8c8d;
+                                            font-style: italic;
+                                        }
+
+                                        .stats-dashboard {
+                                            display: grid;
+                                            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                                            gap: 20px;
+                                            max-width: 1200px;
+                                            margin: 30px auto;
+                                            border-radius: 12px;
+                                            padding: 20px;
+                                            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+                                            text-align: center;
+                                            transition: transform 0.3s ease, box-shadow 0.3s ease;
+                                        }
+
+                                        .stat-card:hover {
+                                            transform: translateY(-5px);
+                                            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+                                        }
+
+                                        .stat-label {
+                                            font-size: 0.85em;
+                                            color: #7f8c8d;
+                                            margin-bottom: 8px;
+                                            font-weight: 500;
+                                        }
+
+                                        .stat-value {
+                                            font-size: 1.8em;
+                                            font-weight: 700;
+                                            color: #2a5298;
+                                        }
+
+                                        .stat-value.trend-up {
+                                            color: #27ae60;
+                                        }
+
+                                        .stat-value.trend-down {
+                                            color: #e74c3c;
+                                        }
+
+                                        .supporting-charts {
+                                            display: grid;
+                                            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+                                            gap: 30px;
+                                            max-width: 1200px;
+                                            margin: 40px auto;
+                                            box-sizing: border-box;
+
+                                            .support-card {
+                                                background: white;
+                                                border-radius: 12px;
+                                                padding: 25px;
+                                                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+                                                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                                                max-width: 600px;
+                                                overflow: hidden;
+
+                                                .support-chart-container {
+                                                    min-height: 300px;
+                                                    max-height: 320px;
+                                                    width: 100%;
+                                                    max-width: 100%;
+                                                    background: #f8f9fa;
+                                                    border-radius: 8px;
+                                                    padding: 15px;
+                                                    display: flex;
+                                                    align-items: center;
+                                                    justify-content: center;
+                                                    margin-top: 12px;
+                                                    box-sizing: border-box;
+                                                    overflow: hidden;
+
+                                                    @@media (max-width: 1024px) {
+                                                        .supporting-charts {
+                                                            grid-template-columns: 1fr;
+                                                        }
+
+                                                        .header-section h1 {
+                                                            font-size: 2em;
+                                                        }
+                                                    }
+
+                                                    @@media (max-width: 768px) {
+                                                        .line-container {
+                                                            padding: 20px 15px;
+                                                        }
+
+                                                        .main-chart-card {
+                                                            padding: 20px;
+                                                        }
+
+                                                        .controls-bar {
+                                                            flex-direction: column;
+                                                            gap: 10px;
+                                                        }
+
+                                                        .line-main-container {
+                                                            min-height: 300px;
+                                                        }
+
+                                                        .stats-dashboard {
+                                                            grid-template-columns: repeat(2, 1fr);
+                                                            gap: 15px;
+                                                        }
+
+                                                        .header-section h1 {
+                                                            font-size: 1.5em;
+                                                        }
+                                                    }
+                                </style>
+                            </div>
+
+@code {
+    private Dictionary<string, object>[] timeSeriesData = Array.Empty<Dictionary<string, object>>();
+    private bool toggleMovingAverage = false;
+    private bool toggleConfidenceBand = false;
+    private bool lastValueGreaterThanFirst = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // ==================== GENERATE TIME SERIES DATA ====================
+        var random = new Random(42);
+        var data = new List<Dictionary<string, object>>();
+        var series = new[] { "Product A", "Product B", "Product C" };
+        var baseValues = new[] { 50.0, 70.0, 60.0 };
+
+        for (int day = 0; day < 90; day++)
+        {
+            for (int s = 0; s < series.Length; s++)
+            {
+                var noise = (random.NextDouble() - 0.5) * 10;
+                var trend = day * 0.3;
+                var seasonal = Math.Sin(day / 15.0) * 5;
+                var value = baseValues[s] + trend + seasonal + noise;
+
+                data.Add(new Dictionary<string, object>
+                {
+                    ["day"] = day + 1,
+                    ["date"] = DateTime.Now.AddDays(-90 + day).ToString("MMM dd"),
+                    ["value"] = Math.Max(0, Math.Round(value, 2)),
+                    ["series"] = series[s],
+                    ["change"] = noise
+                });
+            }
+        }
+
+        timeSeriesData = data.ToArray();
+
+        // Calculate trend
+        var firstValue = timeSeriesData.FirstOrDefault(d => d["series"].ToString() == "Product A")?["value"];
+        var lastValue = timeSeriesData.LastOrDefault(d => d["series"].ToString() == "Product A")?["value"];
+        if (firstValue != null && lastValue != null)
+        {
+            lastValueGreaterThanFirst = double.Parse(lastValue.ToString()) >= double.Parse(firstValue.ToString());
+        }
+
+        // ==================== MAIN INTERACTIVE LINE CHART ====================
+        var mainLineSpec = new Dictionary<string, object>
+        {
+            ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
+            ["title"] = new { text = "Revenue Trends Over Time", subtitle = new[] { "Multi-series analysis with interactive brushing" } },
+            ["data"] = new Dictionary<string, object> { ["values"] = timeSeriesData },
+            ["selection"] = new Dictionary<string, object>
+            {
+                ["brush"] = new { type = "interval", encodings = new[] { "x" } },
+                ["legend"] = new { type = "multi", on = "click" },
+                ["hover"] = new { type = "single", on = "mouseover", nearest = true, empty = "none" }
+            },
+            ["mark"] = new { type = "line", point = true, size = 4, filled = true },
+            ["encoding"] = new Dictionary<string, object>
+            {
+                ["x"] = new { field = "date", type = "ordinal", title = "Date", axis = new { labelAngle = -45, labelBound = true } },
+                ["y"] = new { field = "value", type = "quantitative", title = "Revenue ($K)", scale = new { zero = false } },
+                ["color"] = new { field = "series", type = "nominal", scale = new { scheme = "set2" }, title = "Product" },
+                ["detail"] = new { field = "series", type = "nominal" },
+                ["strokeWidth"] = new { condition = new { param = "hover", value = 4 }, value = 2.5 },
+                ["opacity"] = new { condition = new { param = "legend", value = 1 }, value = 0.3 },
+                ["tooltip"] = new object[]
+                {
+                    new { field = "date", type = "ordinal", title = "Date" },
+                    new { field = "series", type = "nominal", title = "Product" },
+                    new { field = "value", type = "quantitative", title = "Revenue ($K)", format = ".2f" },
+                    new { field = "change", type = "quantitative", title = "Daily Change", format = ".2f" }
+                }
+            },
+            ["config"] = new Dictionary<string, object>
+            {
+                ["mark"] = new { tooltip = true }
+            }
+        };
+
+        // ==================== DETAIL VIEW WITH POINTS ====================
+        var detailSpec = new Dictionary<string, object>
+        {
+            ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
+            ["data"] = new Dictionary<string, object> { ["values"] = timeSeriesData },
+            ["mark"] = new { type = "line", point = true, size = 5, filled = true },
+            ["encoding"] = new Dictionary<string, object>
+            {
+                ["x"] = new { field = "date", type = "ordinal", title = "Date", axis = new { labelAngle = -45, labelBound = true } },
+                ["y"] = new { field = "value", type = "quantitative", title = "Revenue ($K)", scale = new { zero = false } },
+                ["color"] = new { field = "series", type = "nominal", scale = new { scheme = "set2" } },
+                ["detail"] = new { field = "series", type = "nominal" },
+                ["opacity"] = new { value = 0.8 },
+                ["tooltip"] = new object[]
+                {
+                    new { field = "date", type = "ordinal", title = "Date" },
+                    new { field = "series", type = "nominal", title = "Product" },
+                    new { field = "value", type = "quantitative", title = "Value", format = ".2f" }
+                }
+            }
+        };
+
+        // ==================== VOLATILITY CHART ====================
+        var volatilitySpec = new Dictionary<string, object>
+        {
+            ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
+            ["data"] = new Dictionary<string, object> { ["values"] = timeSeriesData },
+            ["mark"] = "bar",
+            ["encoding"] = new Dictionary<string, object>
+            {
+                ["x"] = new { field = "date", type = "ordinal", title = "Date", axis = new { labelAngle = -45, labelBound = true } },
+                ["y"] = new { field = "change", type = "quantitative", title = "Daily Change" },
+                ["color"] = new
+                {
+                    condition = new Dictionary<string, object> { ["test"] = "datum.change > 0", ["value"] = "#27ae60" },
+                    value = "#e74c3c"
+                },
+                ["tooltip"] = new object[]
+                {
+                    new { field = "date", type = "ordinal", title = "Date" },
+                    new { field = "series", type = "nominal", title = "Product" },
+                    new { field = "change", type = "quantitative", title = "Change", format = ".2f" }
+                }
+            }
+        };
+
+        // ==================== SERIES COMPARISON ====================
+        var comparisonSpec = new Dictionary<string, object>
+        {
+            ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
+            ["data"] = new Dictionary<string, object> { ["values"] = timeSeriesData },
+            ["mark"] = "bar",
+            ["encoding"] = new Dictionary<string, object>
+            {
+                ["y"] = new { field = "series", type = "nominal", title = "Product" },
+                ["x"] = new { aggregate = "mean", field = "value", type = "quantitative", title = "Avg Revenue ($K)" },
+                ["color"] = new { field = "series", type = "nominal", scale = new { scheme = "set2" } },
+                ["tooltip"] = new object[]
+                {
+                    new { field = "series", type = "nominal", title = "Product" },
+                    new { aggregate = "mean", field = "value", type = "quantitative", title = "Average", format = ".2f" }
+                }
+            }
+        };
+
+        // ==================== CUMULATIVE GROWTH ====================
+        var cumulativeSpec = new Dictionary<string, object>
+        {
+            ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
+            ["data"] = new Dictionary<string, object> { ["values"] = timeSeriesData },
+            ["transform"] = new object[]
+            {
+                new Dictionary<string, object>
+                {
+                    ["sort"] = new object[] { new Dictionary<string, object> { ["field"] = "day" } },
+                    ["window"] = new object[] { new Dictionary<string, object> { ["op"] = "sum", ["field"] = "value", ["as"] = "cumulative" } },
+                    ["groupby"] = new[] { "series" }
+                },
+                new Dictionary<string, object>
+                {
+                    ["calculate"] = "(datum.cumulative - 50) / 50 * 100",
+                    ["as"] = "growth"
+                }
+            },
+            ["mark"] = new { type = "area", opacity = 0.7, line = true, point = true },
+            ["encoding"] = new Dictionary<string, object>
+            {
+                ["x"] = new { field = "date", type = "ordinal", title = "Date", axis = new { labelAngle = -45, labelBound = true } },
+                ["y"] = new { field = "growth", type = "quantitative", title = "Growth (%)" },
+                ["color"] = new { field = "series", type = "nominal", scale = new { scheme = "set2" } },
+                ["detail"] = new { field = "series", type = "nominal" },
+                ["opacity"] = new { value = 0.8 },
+                ["tooltip"] = new object[]
+                {
+                    new { field = "date", type = "ordinal", title = "Date" },
+                    new { field = "series", type = "nominal", title = "Product" },
+                    new { field = "growth", type = "quantitative", title = "Growth (%)", format = ".2f" }
+                }
+            }
+        };
+
+        // Render all visualizations
+        await JS.InvokeVoidAsync("renderVegaFromSpec", "lineMainChart", mainLineSpec);
+        await JS.InvokeVoidAsync("renderVegaFromSpec", "detailChart", detailSpec);
+        await JS.InvokeVoidAsync("renderVegaFromSpec", "volatilityChart", volatilitySpec);
+        await JS.InvokeVoidAsync("renderVegaFromSpec", "comparisonChart", comparisonSpec);
+        await JS.InvokeVoidAsync("renderVegaFromSpec", "cumulativeChart", cumulativeSpec);
+    }
+}

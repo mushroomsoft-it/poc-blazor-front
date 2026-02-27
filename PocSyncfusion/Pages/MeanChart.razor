@@ -1,0 +1,242 @@
+@page "/mean"
+@using Syncfusion.Blazor.Charts
+
+<div class="meanchart-container">
+    <h2>QC Control Chart - Mean ± Standard Deviations</h2>
+    <p style="text-align: center; color: #666; margin-bottom: 20px;">
+        Quality monitoring: detect trends and out-of-control points
+    </p>
+
+    <SfChart Title="Control Chart: Mean ± SD" Width="100%" Height="550px">
+
+        <!-- Tooltip -->
+        <ChartTooltipSettings Enable="true" Format="<b>Day:</b> ${point.x}<br/><b>Value:</b> ${point.y}" Shared="false">
+        </ChartTooltipSettings>
+
+        <!-- Legend -->
+        <ChartLegendSettings Visible="true" Position="LegendPosition.Top" Background="white">
+        </ChartLegendSettings>
+
+        <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category" Title="Measurement Day"
+                           LabelFormat="Day {value}">
+            <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
+        </ChartPrimaryXAxis>
+
+        <ChartPrimaryYAxis Title="Measured Value" LabelFormat="N0" Minimum="@YAxisMin" Maximum="@YAxisMax">
+
+            <ChartStriplines>
+
+                <!-- Mean -->
+                <ChartStripline Start="@Mean" Size="0" Color="blue" DashArray="6,4"          Text="@($"Mean = {Mean:F2}")"
+                                HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End"
+                                VerticalAlignment="Syncfusion.Blazor.Charts.Anchor.Middle">
+                </ChartStripline>
+
+                <!-- ±1SD -->
+                <ChartStripline Start="@SD1Plus" Size="0" Color="green" DashArray="4,4"                 Text="@($"+1SD = {SD1Plus:F2}")"
+                                HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
+
+                <ChartStripline Start="@SD1Minus" Size="0" Color="green" DashArray="4,4"
+                                Text="@($"-1SD = {SD1Minus:F2}")" HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
+
+                <!-- ±2SD -->
+                <ChartStripline Start="@SD2Plus" Size="0" Color="orange" DashArray="4,4"
+                                Text="@($"+2SD = {SD2Plus:F2}")" HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
+
+                <ChartStripline Start="@SD2Minus" Size="0" Color="orange" DashArray="4,4"
+                                Text="@($"-2SD = {SD2Minus:F2}")" HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
+
+                <!-- ±3SD -->
+                <ChartStripline Start="@SD3Plus" Size="0" Color="red" DashArray="6,4"          Text="@($"+3SD = {SD3Plus:F2}")"
+                                HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
+
+                <ChartStripline Start="@SD3Minus" Size="0" Color="red" DashArray="6,4"                         Text="@($"-3SD = {SD3Minus:F2}")"
+                                HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
+
+            </ChartStriplines>
+
+        </ChartPrimaryYAxis>
+
+        <ChartSeriesCollection>
+
+            <!-- Baseline (Control) -->
+            <ChartSeries DataSource="@AllPoints" Name="Normal Measurements" XName="Day" YName="Value"
+                         Type="ChartSeriesType.Line" Width="2" Fill="#2196F3">
+                <ChartMarker Visible="true" Width="8" Height="8" Fill="#2196F3"></ChartMarker>
+            </ChartSeries>
+
+            <!-- Warnings ±2SD -->
+            <ChartSeries DataSource="@WarningPoints" Name="Warnings (±2SD)" XName="Day" YName="Value"
+                         Type="ChartSeriesType.Scatter" Fill="#FF9800">
+                <ChartMarker Visible="true" Width="12" Height="12" Fill="#FF9800"></ChartMarker>
+            </ChartSeries>
+
+            <!-- Critical ±3SD -->
+            <ChartSeries DataSource="@CriticalPoints" Name="Critical (±3SD)" XName="Day" YName="Value"
+                         Type="ChartSeriesType.Scatter" Fill="#F44336">
+                <ChartMarker Visible="true" Width="14" Height="14" Fill="#F44336"></ChartMarker>
+            </ChartSeries>
+
+        </ChartSeriesCollection>
+
+    </SfChart>
+
+    <!-- QC Chart Information -->
+    <div
+        style="margin-top: 20px; padding: 20px; background-color: #f9f9f9; border-radius: 5px; border-left: 4px solid #2196F3;">
+        <h4>📐 QC Chart Interpretation</h4>
+        <ul style="margin: 10px 0; line-height: 1.8; padding-left: 20px;">
+            <li><strong style="color: #2196F3;">● Blue Points:</strong> Measurements within control (≈ ±1.96σ)</li>
+            <li><strong style="color: #FF9800;">● Orange Points:</strong> Warnings - Between ±2σ and ±3σ (Review
+                process)</li>
+                <li><strong style="color: #F44336;">● Red Points:</strong> Critical - Outside ±3σ (Stop and correct)</li>
+                <li><strong style="color: #1976d2;">— Blue Line:</strong> Mean (average of all measurements)</li>
+                <li><strong style="color: #4caf50;">— Green Lines:</strong> ±1 Standard Deviation (≈68% of data)</li>
+                <li><strong style="color: #ff9800;">— Orange Lines:</strong> ±2 Standard Deviations (≈95% of data)</li>
+                <li><strong style="color: #f44336;">— Red Lines:</strong> ±3 Standard Deviations (≈99.7% of data)</li>
+            </ul>
+        </div>
+
+        <!-- Statistics -->
+        <div
+            style="margin-top: 15px; padding: 20px; background-color: #f0f7ff; border-radius: 5px; border-left: 4px solid #1976d2;">
+            <h4>📈 Control Statistics</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                <div style="background: white; padding: 15px; border-radius: 4px; text-align: center;">
+                    <p style="margin: 0; color: #666; font-size: 0.9em;"><strong>Mean (μ)</strong></p>
+                    <p style="margin: 5px 0; font-size: 1.4em; color: #2196F3; font-weight: bold;">@Mean.ToString("F2")</p>
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 4px; text-align: center;">
+                    <p style="margin: 0; color: #666; font-size: 0.9em;"><strong>Std Dev (σ)</strong></p>
+                    <p style="margin: 5px 0; font-size: 1.4em; color: #4caf50; font-weight: bold;">@SD.ToString("F2")</p>
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 4px; text-align: center;">
+                    <p style="margin: 0; color: #666; font-size: 0.9em;"><strong>Total Measurements</strong></p>
+                    <p style="margin: 5px 0; font-size: 1.4em; color: #555; font-weight: bold;">@AllPoints.Count</p>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 15px;">
+                <div style="background: #e3f2fd; padding: 12px; border-radius: 4px; text-align: center;">
+                    <p style="margin: 0; color: #1976d2; font-size: 0.9em;"><strong>Normal</strong></p>
+                    <p style="margin: 5px 0; font-size: 1.3em; color: #2196F3; font-weight: bold;">@(AllPoints.Count -
+                                                                                                                                    WarningPoints.Count - CriticalPoints.Count)</p>
+                    </div>
+                    <div style="background: #fff3e0; padding: 12px; border-radius: 4px; text-align: center;">
+                        <p style="margin: 0; color: #e65100; font-size: 0.9em;"><strong>Warnings</strong></p>
+                        <p style="margin: 5px 0; font-size: 1.3em; color: #FF9800; font-weight: bold;">@WarningPoints.Count</p>
+                    </div>
+                    <div style="background: #ffebee; padding: 12px; border-radius: 4px; text-align: center;">
+                        <p style="margin: 0; color: #b71c1c; font-size: 0.9em;"><strong>Critical</strong></p>
+                        <p style="margin: 5px 0; font-size: 1.3em; color: #F44336; font-weight: bold;">@CriticalPoints.Count</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            .meanchart-container {
+                padding: 20px;
+                background: linear-gradient(135deg, #e3f2fd 0%, #f0f4f8 100%);
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+
+            .meanchart-container h2 {
+                color: #1565c0;
+                margin-bottom: 10px;
+                text-align: center;
+            }
+
+            .meanchart-container h4 {
+                color: #333;
+                margin-top: 0;
+                margin-bottom: 12px;
+            }
+
+            .meanchart-container ul {
+                margin: 0;
+            }
+
+            .meanchart-container li {
+                margin: 8px 0;
+            }
+
+            .meanchart-container p {
+                margin: 8px 0;
+            }
+        </style>
+
+@code {
+
+    public List<DataPoint> AllPoints = new();
+    public List<DataPoint> WarningPoints = new();
+    public List<DataPoint> CriticalPoints = new();
+
+    public double Mean;
+    public double SD;
+
+    public double SD1Plus, SD1Minus;
+    public double SD2Plus, SD2Minus;
+    public double SD3Plus, SD3Minus;
+
+    public double YAxisMin;
+    public double YAxisMax;
+
+    protected override void OnInitialized()
+    {
+        var random = new Random();
+
+        // Mayor variabilidad para que se vea bien
+        for (int i = 1; i <= 30; i++)
+        {
+            double value = 100 + (random.NextDouble() * 40 - 20);
+            AllPoints.Add(new DataPoint
+            {
+                Day = i.ToString(),
+                Value = value
+            });
+        }
+
+        CalculateStatistics();
+        ClassifyPoints();
+    }
+
+    private void CalculateStatistics()
+    {
+        Mean = AllPoints.Average(x => x.Value);
+
+        double variance = AllPoints.Average(x =>
+            Math.Pow(x.Value - Mean, 2));
+
+        SD = Math.Sqrt(variance);
+
+        SD1Plus = Mean + SD;
+        SD1Minus = Mean - SD;
+
+        SD2Plus = Mean + 2 * SD;
+        SD2Minus = Mean - 2 * SD;
+
+        SD3Plus = Mean + 3 * SD;
+        SD3Minus = Mean - 3 * SD;
+
+        YAxisMin = Math.Floor(Mean - 4 * SD);
+        YAxisMax = Math.Ceiling(Mean + 4 * SD);
+    }
+
+    private void ClassifyPoints()
+    {
+        foreach (var point in AllPoints)
+        {
+            if (point.Value > SD3Plus || point.Value < SD3Minus)
+                CriticalPoints.Add(point);
+            else if (point.Value > SD2Plus || point.Value < SD2Minus)
+                WarningPoints.Add(point);
+        }
+    }
+
+    public class DataPoint
+    {
+        public string Day { get; set; } = "";
+        public double Value { get; set; }
+    }
+}

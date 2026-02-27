@@ -1,0 +1,115 @@
+@page "/histogram"
+@using Syncfusion.Blazor.Charts
+
+<div class="histogram-container">
+    <h2>Distribution Analysis - Histogram with Normal Curve</h2>
+
+    <SfChart Title="Histogram with Expected Normal Curve" Width="100%" Height="500px">
+
+        <!-- Tooltip -->
+        <ChartTooltipSettings Enable="true" Format="<b>${point.x}</b><br/>Value: <b>${point.y}</b>" Shared="true">
+        </ChartTooltipSettings>
+
+        <!-- Legend -->
+        <ChartLegendSettings Visible="true" Position="LegendPosition.Top" Background="white">
+        </ChartLegendSettings>
+
+        <!-- X Axis -->
+        <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category" Title="Value Ranges"
+                           LabelFormat="Range: {value}" Interval="1">
+            <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
+        </ChartPrimaryXAxis>
+
+        <!-- Y Axis -->
+        <ChartPrimaryYAxis Title="Frequency" Interval="5" LabelFormat="{value}">
+            <ChartAxisLineStyle Color="transparent"></ChartAxisLineStyle>
+        </ChartPrimaryYAxis>
+
+        <ChartSeriesCollection>
+            <!-- Histogram (Columns) -->
+            <ChartSeries DataSource="@HistogramData" Name="Observed Frequency" XName="Range" YName="Frequency"
+                         Type="ChartSeriesType.Column" Fill="#3F51B5">
+                <ChartMarker>
+                    <ChartDataLabel Visible="true" Position="LabelPosition.Top">
+                        <Template Context="data">
+                            @(System.Convert.ToDouble(((Syncfusion.Blazor.Charts.ChartDataPointInfo)data).Y).ToString("F0"))
+                        </Template>
+                    </ChartDataLabel>
+                </ChartMarker>
+            </ChartSeries>
+
+            <!-- Expected Normal Curve (Line) -->
+            <ChartSeries DataSource="@CurveData" Name="Expected Normal Distribution" XName="Range" YName="Value"
+                         Type="ChartSeriesType.Line" Width="3" Fill="#FF6F00">
+                <ChartMarker Visible="true" Height="8" Width="8" Fill="#FF6F00">
+                </ChartMarker>
+            </ChartSeries>
+        </ChartSeriesCollection>
+    </SfChart>
+
+    <!-- Statistics -->
+    <div style="margin-top: 20px; padding: 15px; background-color: #f5f5f5; border-radius: 5px;">
+        <h4>📈 Statistics</h4>
+        <p><strong>Total observations:</strong> @TotalFrequency</p>
+        <p><strong>Maximum frequency:</strong> @MaxFrequency</p>
+        <p><strong>Approx. mean range:</strong> @AverageRange</p>
+    </div>
+</div>
+
+<style>
+    .histogram-container {
+        padding: 20px;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .histogram-container h2 {
+        color: #333;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .histogram-container h4 {
+        color: #555;
+        margin-top: 0;
+    }
+</style>
+
+@code {
+
+    public List<HistogramPoint> HistogramData = new()
+    {
+        new() { Range="40-44", Frequency=5 },
+        new() { Range="44-48", Frequency=12 },
+        new() { Range="48-52", Frequency=20 },
+        new() { Range="52-56", Frequency=18 },
+        new() { Range="56-60", Frequency=8 },
+    };
+
+    public List<CurvePoint> CurveData = new()
+    {
+        new() { Range="40-44", Value=4 },
+        new() { Range="44-48", Value=10 },
+        new() { Range="48-52", Value=18 },
+        new() { Range="52-56", Value=14 },
+        new() { Range="56-60", Value=6 },
+    };
+
+    // Propiedades calculadas para estadísticas
+    public double TotalFrequency => HistogramData.Sum(x => x.Frequency);
+    public double MaxFrequency => HistogramData.Max(x => x.Frequency);
+    public string AverageRange => "52";
+
+    public class HistogramPoint
+    {
+        public string Range { get; set; } = "";
+        public double Frequency { get; set; }
+    }
+
+    public class CurvePoint
+    {
+        public string Range { get; set; } = "";
+        public double Value { get; set; }
+    }
+}

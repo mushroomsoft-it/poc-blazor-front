@@ -1,0 +1,137 @@
+@page "/sigma"
+@using Syncfusion.Blazor.Charts
+
+<div class="sigmachart-container">
+    <h2>Sigma Analysis - CV vs Bias</h2>
+    <p style="text-align: center; color: #666; margin-bottom: 20px;">
+        Analytical quality visualization: Coefficient of Variation (CV) vs Bias
+    </p>
+
+    <SfChart Title="Scatter Plot: CV vs Bias" Width="100%" Height="500px">
+
+        <!-- Tooltip -->
+        <ChartTooltipSettings Enable="true" Format="<b>CV:</b> ${point.x}%<br/><b>Bias:</b> ${point.y}%" Shared="false">
+        </ChartTooltipSettings>
+
+        <!-- Legend -->
+        <ChartLegendSettings Visible="true" Position="LegendPosition.Top" Background="white">
+        </ChartLegendSettings>
+
+        <!-- X Axis -->
+        <ChartPrimaryXAxis Title="Coefficient of Variation - CV (%)"
+                           ValueType="Syncfusion.Blazor.Charts.ValueType.Double" Minimum="0" Maximum="35" Interval="5"
+                           LabelFormat="{value}%">
+            <ChartAxisMajorGridLines Width="1" Color="#e0e0e0"></ChartAxisMajorGridLines>
+        </ChartPrimaryXAxis>
+
+        <!-- Y Axis -->
+        <ChartPrimaryYAxis Title="Bias (%)" ValueType="Syncfusion.Blazor.Charts.ValueType.Double" Minimum="0"
+                           Maximum="35" Interval="5" LabelFormat="{value}%">
+            <ChartAxisLineStyle Width="2"></ChartAxisLineStyle>
+        </ChartPrimaryYAxis>
+
+        <ChartSeriesCollection>
+            <!-- Sigma Points -->
+            <ChartSeries DataSource="@SigmaPoints" Name="Quality Points" XName="CV" YName="Bias"
+                         Type="ChartSeriesType.Scatter">
+                <ChartMarker Visible="true" Height="12" Width="12" Fill="#FF6F00">
+                </ChartMarker>
+            </ChartSeries>
+        </ChartSeriesCollection>
+    </SfChart>
+    <!-- Sigma Metrics Info -->
+    <div
+        style="margin-top: 20px; padding: 20px; background-color: #f9f9f9; border-radius: 5px; border-left: 4px solid #FF6F00;">
+        <h4>📐 Sigma Metric</h4>
+        <p style="margin: 10px 0;">
+            The Sigma metric is a quality indicator combining two key parameters in laboratory analysis:
+        </p>
+        <ul style="margin: 10px 0; line-height: 1.8; padding-left: 20px;">
+            <li><strong>CV (Coefficient of Variation):</strong> Measures precision and repeatability of measurements
+            </li>
+            <li><strong>Bias:</strong> Measures accuracy or systematic deviation from the true value</li>
+        </ul>
+        <p style="margin: 10px 0; color: #666; font-size: 0.95em;">
+            <strong>Goal:</strong> Find points with low CV and low Bias for maximum analytical quality.
+        </p>
+    </div>
+
+    <!-- Statistics -->
+    <div
+        style="margin-top: 15px; padding: 20px; background-color: #f0f7ff; border-radius: 5px; border-left: 4px solid #1976d2;">
+        <h4>Data Statistics</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+                <p><strong>Average CV:</strong> @AverageCV.ToString("F2")%</p>
+                <p><strong>Min CV:</strong> @MinCV.ToString("F2")%</p>
+                <p><strong>Max CV:</strong> @MaxCV.ToString("F2")%</p>
+            </div>
+            <div>
+                <p><strong>Average Bias:</strong> @AverageBias.ToString("F2")%</p>
+                <p><strong>Min Bias:</strong> @MinBias.ToString("F2")%</p>
+                <p><strong>Max Bias:</strong> @MaxBias.ToString("F2")%</p>
+            </div>
+        </div>
+        <p style="margin-top: 15px;"><strong>Total Points:</strong> @SigmaPoints.Count</p>
+    </div>
+</div>
+
+<style>
+    .sigmachart-container {
+        padding: 20px;
+        background: linear-gradient(135deg, #fef5e7 0%, #fff8f0 100%);
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .sigmachart-container h2 {
+        color: #333;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+
+    .sigmachart-container h4 {
+        color: #555;
+        margin-top: 0;
+        margin-bottom: 10px;
+    }
+
+    .sigmachart-container ul {
+        margin: 0;
+    }
+
+    .sigmachart-container li {
+        margin: 8px 0;
+    }
+
+    .sigmachart-container p {
+        margin: 8px 0;
+    }
+</style>
+
+@code {
+
+    public List<SigmaPoint> SigmaPoints = new()
+    {
+        new() { CV=10, Bias=20 },
+        new() { CV=15, Bias=30 },
+        new() { CV=20, Bias=25 },
+        new() { CV=25, Bias=15 },
+        new() { CV=30, Bias=10 }
+    };
+
+    // Propiedades calculadas para estadísticas
+    public double AverageCV => SigmaPoints.Average(x => x.CV);
+    public double MinCV => SigmaPoints.Min(x => x.CV);
+    public double MaxCV => SigmaPoints.Max(x => x.CV);
+
+    public double AverageBias => SigmaPoints.Average(x => x.Bias);
+    public double MinBias => SigmaPoints.Min(x => x.Bias);
+    public double MaxBias => SigmaPoints.Max(x => x.Bias);
+
+    public class SigmaPoint
+    {
+        public double CV { get; set; }
+        public double Bias { get; set; }
+    }
+}

@@ -1,0 +1,33 @@
+@page "/control-chart"
+@inject IJSRuntime JS
+
+<h3 class="mb-4">Control Chart - TeeChart</h3>
+
+<div class="container">
+    <canvas id="meanChart" width="900" height="400"></canvas>
+</div>
+
+@code {
+
+    private List<double> Values = new();
+
+    protected override void OnInitialized()
+    {
+        var random = new Random();
+
+        for (int i = 0; i < 30; i++)
+        {
+            Values.Add(100 + (random.NextDouble() * 40 - 20));
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+            await RenderChart();
+    }
+
+    private async Task RenderChart()
+    {
+        await JS.InvokeVoidAsync("createMeanChart", "meanChart", Values);
+    }
+}
