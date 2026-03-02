@@ -1,0 +1,233 @@
+@page "/areachart"
+@inject IJSRuntime JS
+@using System.Collections.Generic
+
+<div class="area-container">
+
+    <div class="header-section">
+        <h1>📈 Area Chart</h1>
+        <p class="subtitle">
+            Interactive area with zoom, smoothed line, and data points
+        </p>
+    </div>
+
+    <!-- Chart Card -->
+    <div class="chart-card">
+        <div class="chart-title">Revenue Trend</div>
+        <div id="areaChart" class="chart-container"></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-value">$@totalRevenue K</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Average</div>
+            <div class="stat-value">$@averageRevenue K</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Max</div>
+            <div class="stat-value">$@maxRevenue K</div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .area-container {
+        background: linear-gradient(135deg, #e3f2fd, #ffffff);
+        min-height: 100vh;
+        padding: 40px 20px;
+        font-family: 'Segoe UI', Tahoma, Verdana, sans-serif;
+    }
+
+    .header-section {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .header-section h1 {
+        font-size: 2.3em;
+        font-weight: 700;
+    }
+
+    .subtitle {
+        color: #555;
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+
+    .chart-title {
+        font-size: 1.3em;
+        font-weight: 600;
+        margin-bottom: 15px;
+        border-bottom: 3px solid #2196F3;
+        padding-bottom: 10px;
+    }
+
+    .chart-container {
+        height: 400px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        max-width: 1100px;
+        margin: 40px auto;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-label {
+        color: #777;
+        font-size: .9em;
+    }
+
+    .stat-value {
+        font-size: 1.8em;
+        font-weight: 700;
+        color: #2196F3;
+    }
+</style>
+
+@code {
+
+    private Dictionary<string, object>[] salesData = Array.Empty<Dictionary<string, object>>();
+
+    private double totalRevenue;
+    private double averageRevenue;
+    private double maxRevenue;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        GenerateData();
+        ComputeStats();
+
+        StateHasChanged();
+
+        await RenderAreaChart();
+    }
+
+    private void GenerateData()
+    {
+        salesData = new[]
+        {
+            new Dictionary<string, object>{{"month","Jan"},{"revenue",120}},
+            new Dictionary<string, object>{{"month","Feb"},{"revenue",150}},
+            new Dictionary<string, object>{{"month","Mar"},{"revenue",180}},
+            new Dictionary<string, object>{{"month","Apr"},{"revenue",170}},
+            new Dictionary<string, object>{{"month","May"},{"revenue",200}},
+            new Dictionary<string, object>{{"month","Jun"},{"revenue",220}}
+        };
+    }
+
+    private void ComputeStats()
+    {
+        var values = salesData.Select(d => Convert.ToDouble(d["revenue"])).ToList();
+
+        totalRevenue = values.Sum();
+        averageRevenue = Math.Round(values.Average(), 2);
+        maxRevenue = values.Max();
+    }
+
+    private async Task RenderAreaChart()
+    {
+        var spec = new Dictionary<string, object>
+        {
+            ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
+            ["width"] = 900,
+            ["height"] = 400,
+
+            ["data"] = new Dictionary<string, object>
+            {
+                ["values"] = salesData
+            },
+
+            ["selection"] = new Dictionary<string, object>
+            {
+                ["zoom"] = new Dictionary<string, object>
+                {
+                    ["type"] = "interval",
+                    ["bind"] = "scales"
+                }
+            },
+
+            ["mark"] = new Dictionary<string, object>
+            {
+                ["type"] = "area",
+                ["interpolate"] = "monotone",
+                ["opacity"] = 0.6,
+                ["line"] = new Dictionary<string, object>
+                {
+                    ["color"] = "#2196F3",
+                    ["strokeWidth"] = 2
+                },
+                ["point"] = new Dictionary<string, object>
+                {
+                    ["filled"] = true,
+                    ["size"] = 60,
+                    ["color"] = "#1976D2"
+                }
+            },
+
+            ["encoding"] = new Dictionary<string, object>
+            {
+                ["x"] = new Dictionary<string, object>
+                {
+                    ["field"] = "month",
+                    ["type"] = "ordinal",
+                    ["title"] = "Month",
+                    ["sort"] = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun" }
+                },
+
+                ["y"] = new Dictionary<string, object>
+                {
+                    ["field"] = "revenue",
+                    ["type"] = "quantitative",
+                    ["title"] = "Revenue ($K)"
+                },
+
+                ["color"] = new Dictionary<string, object>
+                {
+                    ["value"] = "#64B5F6"
+                },
+
+                ["tooltip"] = new object[]
+                {
+                    new Dictionary<string, object>
+                    {
+                        ["field"] = "month",
+                        ["type"] = "ordinal",
+                        ["title"] = "Month"
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["field"] = "revenue",
+                        ["type"] = "quantitative",
+                        ["title"] = "Revenue ($K)"
+                    }
+                }
+            }
+        };
+
+        await JS.InvokeVoidAsync("renderVegaFromSpec", "areaChart", spec);
+    }
+}

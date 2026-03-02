@@ -237,25 +237,27 @@
                 </div>
 
 @code {
+
     private Dictionary<string, object>[] dataPoints = Array.Empty<Dictionary<string, object>>();
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    // ==================== 1️⃣ GENERAR DATOS ANTES DEL RENDER ====================
+    protected override void OnInitialized()
     {
-        if (!firstRender) return;
+        GenerateData();
+    }
 
-        // ==================== GENERATE SYNTHETIC DATA ====================
+    private void GenerateData()
+    {
         var random = new Random(42);
         var data = new List<Dictionary<string, object>>();
         var categories = new[] { "High Performance", "Standard", "Budget", "Premium" };
 
-        // Generate realistic scatter data with correlations
         for (int i = 0; i < 150; i++)
         {
             var category = categories[random.Next(categories.Length)];
             var baseX = random.NextDouble() * 100;
-            var baseY = baseX * 0.8 + (random.NextDouble() * 30 - 15); // Some correlation
+            var baseY = baseX * 0.8 + (random.NextDouble() * 30 - 15);
 
-            // Add category-specific variations
             if (category == "Premium") baseY += 20;
             else if (category == "Budget") baseY -= 15;
 
@@ -271,11 +273,19 @@
         }
 
         dataPoints = data.ToArray();
+    }
 
-        // ==================== MAIN SCATTER PLOT (ADVANCED) ====================
+    // ==================== 2️⃣ RENDERIZAR TODOS LOS GRÁFICOS ====================
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // ==================== MAIN SCATTER ====================
         var mainScatterSpec = new Dictionary<string, object>
         {
             ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
+            ["width"] = 1000,
+            ["height"] = 500,
             ["title"] = new
             {
                 text = "Performance vs Cost Analysis",
@@ -291,51 +301,55 @@
             ["encoding"] = new Dictionary<string, object>
             {
                 ["x"] = new { field = "x", type = "quantitative", title = "Cost Index", scale = new { zero = false } },
+
                 ["y"] = new { field = "y", type = "quantitative", title = "Performance Score", scale = new { zero = false } },
-                ["size"] = new { field = "performance", type = "quantitative", scale = new { range = new[] { 100, 500 } }, title = "Performance" },
-                ["color"] = new { field = "category", type = "nominal", scale = new { scheme = "set1" }, title = "Category" },
+
+                ["size"] = new { field = "performance", type = "quantitative", scale = new { range = new[] { 100, 500 } } },
+
+                ["color"] = new { field = "category", type = "nominal", scale = new { scheme = "set1" } },
+
                 ["opacity"] = new { condition = new { param = "brush", value = 1 }, value = 0.3 },
+
                 ["strokeWidth"] = new { condition = new { param = "hover", value = 3 }, value = 1 },
+
                 ["tooltip"] = new object[]
                 {
                     new { field = "id", type = "ordinal", title = "ID" },
-                    new { field = "x", type = "quantitative", title = "Cost", format = ".2f" },
-                    new { field = "y", type = "quantitative", title = "Performance", format = ".2f" },
+                    new { field = "x", type = "quantitative", title = "Cost Index", format = ".2f" },
+                    new { field = "y", type = "quantitative", title = "Performance Score", format = ".2f" },
                     new { field = "category", type = "nominal", title = "Category" },
-                    new { field = "performance", type = "quantitative", title = "Performance Score" }
+                    new { field = "performance", type = "quantitative", title = "Performance Metric" }
                 }
-            },
-            ["config"] = new Dictionary<string, object>
-            {
-                ["mark"] = new { tooltip = true }
             }
         };
 
-        // ==================== X DISTRIBUTION HISTOGRAM ====================
+        // ==================== X HISTOGRAM ====================
         var xHistSpec = new Dictionary<string, object>
         {
             ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
+            ["width"] = 400,
+            ["height"] = 300,
             ["data"] = new Dictionary<string, object> { ["values"] = dataPoints },
-            ["mark"] = new { type = "bar", color = "#667eea", opacity = 0.8 },
+            ["mark"] = new { type = "bar", color = "#667eea" },
             ["encoding"] = new Dictionary<string, object>
             {
-                ["x"] = new { field = "x", type = "quantitative", bin = new { maxbins = 20 }, title = "Cost Index" },
-                ["y"] = new { aggregate = "count", type = "quantitative", title = "Frequency" },
-                ["opacity"] = new { value = 0.7 }
+                ["x"] = new { field = "x", type = "quantitative", bin = new { maxbins = 20 } },
+                ["y"] = new { aggregate = "count", type = "quantitative" }
             }
         };
 
-        // ==================== Y DISTRIBUTION HISTOGRAM ====================
+        // ==================== Y HISTOGRAM ====================
         var yHistSpec = new Dictionary<string, object>
         {
             ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
+            ["width"] = 400,
+            ["height"] = 300,
             ["data"] = new Dictionary<string, object> { ["values"] = dataPoints },
-            ["mark"] = new { type = "bar", color = "#764ba2", opacity = 0.8 },
+            ["mark"] = new { type = "bar", color = "#764ba2" },
             ["encoding"] = new Dictionary<string, object>
             {
-                ["x"] = new { field = "y", type = "quantitative", bin = new { maxbins = 20 }, title = "Performance Score" },
-                ["y"] = new { aggregate = "count", type = "quantitative", title = "Frequency" },
-                ["opacity"] = new { value = 0.7 }
+                ["x"] = new { field = "y", type = "quantitative", bin = new { maxbins = 20 } },
+                ["y"] = new { aggregate = "count", type = "quantitative" }
             }
         };
 
@@ -343,32 +357,34 @@
         var categorySpec = new Dictionary<string, object>
         {
             ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
+            ["width"] = 400,
+            ["height"] = 300,
             ["data"] = new Dictionary<string, object> { ["values"] = dataPoints },
             ["mark"] = "bar",
             ["encoding"] = new Dictionary<string, object>
             {
-                ["y"] = new { field = "category", type = "nominal", title = "Category" },
-                ["x"] = new { aggregate = "count", type = "quantitative", title = "Count" },
+                ["y"] = new { field = "category", type = "nominal" },
+                ["x"] = new { aggregate = "count", type = "quantitative" },
                 ["color"] = new { field = "category", type = "nominal", scale = new { scheme = "set1" } }
-            },
-            ["sort"] = new { encoding = "x", order = "descending" }
+            }
         };
 
-        // ==================== DENSITY HEATMAP ====================
+        // ==================== HEATMAP ====================
         var heatmapSpec = new Dictionary<string, object>
         {
             ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
+            ["width"] = 400,
+            ["height"] = 300,
             ["data"] = new Dictionary<string, object> { ["values"] = dataPoints },
             ["mark"] = "rect",
             ["encoding"] = new Dictionary<string, object>
             {
-                ["x"] = new { field = "x", type = "quantitative", bin = new { maxbins = 15 }, title = "Cost Index" },
-                ["y"] = new { field = "y", type = "quantitative", bin = new { maxbins = 15 }, title = "Performance" },
-                ["color"] = new { aggregate = "count", type = "quantitative", scale = new { scheme = "reds" }, title = "Density" }
+                ["x"] = new { field = "x", type = "quantitative", bin = new { maxbins = 15 } },
+                ["y"] = new { field = "y", type = "quantitative", bin = new { maxbins = 15 } },
+                ["color"] = new { aggregate = "count", type = "quantitative", scale = new { scheme = "reds" } }
             }
         };
 
-        // Render all visualizations
         await JS.InvokeVoidAsync("renderVegaFromSpec", "scatterMainChart", mainScatterSpec);
         await JS.InvokeVoidAsync("renderVegaFromSpec", "xHistChart", xHistSpec);
         await JS.InvokeVoidAsync("renderVegaFromSpec", "yHistChart", yHistSpec);
