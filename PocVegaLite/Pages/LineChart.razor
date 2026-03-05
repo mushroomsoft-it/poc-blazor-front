@@ -1,5 +1,8 @@
 @page "/linechart"
 @inject IJSRuntime JS
+@inject HttpClient Http
+@using System.Collections.Generic
+@using System.Text.Json
 
 <div class="page-wrapper">
 
@@ -15,37 +18,44 @@
 </div>
 
 <style>
-.page-wrapper {
-    min-height: 100vh;
-    padding: 50px;
-    background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-    font-family: Segoe UI, sans-serif;
-    color: white;
-}
+    .page-wrapper {
+        min-height: 100vh;
+        padding: 50px;
+        background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+        font-family: Segoe UI, sans-serif;
+        color: white;
+    }
 
-.title {
-    text-align: center;
-    font-size: 40px;
-    font-weight: 600;
-}
+    .title {
+        text-align: center;
+        font-size: 40px;
+        font-weight: 600;
+    }
 
-.subtitle {
-    text-align: center;
-    margin-bottom: 40px;
-    opacity: 0.8;
-}
+    .subtitle {
+        text-align: center;
+        margin-bottom: 40px;
+        opacity: 0.8;
+    }
 
-.chart-card {
-    background: white;
-    border-radius: 16px;
-    padding: 30px;
-    max-width: 1100px;
-    margin: auto;
-    box-shadow: 0 25px 50px rgba(0,0,0,0.3);
-}
+    .chart-card {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        max-width: 1100px;
+        margin: auto;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+    }
 </style>
 
 @code {
+
+    private class LineChartRecord
+    {
+        public string? Date { get; set; }
+        public double Value { get; set; }
+        public string? Series { get; set; }
+    }
 
     private List<object> data = new();
 
@@ -53,26 +63,37 @@
     {
         if (!firstRender) return;
 
-        GenerateData();
+        await GenerateDataFromJson();
         await RenderChart();
     }
 
-    private void GenerateData()
+    private async Task GenerateDataFromJson()
     {
-        var rnd = new Random();
-        var series = new[] { "Producto A", "Producto B", "Producto C" };
-
-        for (int i = 0; i < 120; i++)
+        try
         {
-            foreach (var s in series)
+            var json = await Http.GetStringAsync("sample-data/linechart-data.json");
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var records = JsonSerializer.Deserialize<List<LineChartRecord>>(json, options);
+
+            if (records != null && records.Count > 0)
             {
-                data.Add(new
+                data = records.Select(r => new
                 {
-                    date = DateTime.Today.AddDays(-120 + i),
-                    value = 50 + (i * 0.4) + rnd.NextDouble() * 20,
-                    series = s
-                });
+                    date = DateTime.Parse(r.Date ?? DateTime.Now.ToString()),
+                    value = r.Value,
+                    series = r.Series ?? ""
+                }).Cast<object>().ToList();
+                Console.WriteLine($"LineChart data loaded successfully: {data.Count} records");
             }
+            else
+            {
+                Console.WriteLine("No records found in linechart JSON");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading linechart JSON data: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
         }
     }
 

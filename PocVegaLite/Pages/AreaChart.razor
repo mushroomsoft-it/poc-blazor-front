@@ -1,6 +1,8 @@
 @page "/areachart"
 @inject IJSRuntime JS
+@inject HttpClient Http
 @using System.Collections.Generic
+@using System.Text.Json
 
 <div class="area-container">
 
@@ -108,6 +110,12 @@
 
 @code {
 
+    private class SalesRecord
+    {
+        public string? Month { get; set; }
+        public double Revenue { get; set; }
+    }
+
     private Dictionary<string, object>[] salesData = Array.Empty<Dictionary<string, object>>();
 
     private double totalRevenue;
@@ -118,7 +126,7 @@
     {
         if (!firstRender) return;
 
-        GenerateData();
+        await GenerateDataFromJson();
         ComputeStats();
 
         StateHasChanged();
@@ -126,17 +134,35 @@
         await RenderAreaChart();
     }
 
-    private void GenerateData()
+    private async Task GenerateDataFromJson()
     {
-        salesData = new[]
+        try
         {
-            new Dictionary<string, object>{{"month","Jan"},{"revenue",120}},
-            new Dictionary<string, object>{{"month","Feb"},{"revenue",150}},
-            new Dictionary<string, object>{{"month","Mar"},{"revenue",180}},
-            new Dictionary<string, object>{{"month","Apr"},{"revenue",170}},
-            new Dictionary<string, object>{{"month","May"},{"revenue",200}},
-            new Dictionary<string, object>{{"month","Jun"},{"revenue",220}}
-        };
+            var json = await Http.GetStringAsync("sample-data/sales-data.json");
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var records = JsonSerializer.Deserialize<List<SalesRecord>>(json, options);
+
+            if (records != null && records.Count > 0)
+            {
+                salesData = records.Select(r => new Dictionary<string, object>
+                {
+                    { "month", r.Month ?? "" },
+                    { "revenue", r.Revenue }
+                }).ToArray();
+                Console.WriteLine($"Data loaded successfully: {salesData.Length} records");
+            }
+            else
+            {
+                Console.WriteLine("No records found in JSON");
+                salesData = Array.Empty<Dictionary<string, object>>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading JSON data: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            salesData = Array.Empty<Dictionary<string, object>>();
+        }
     }
 
     private void ComputeStats()

@@ -1,5 +1,6 @@
 @page "/sigma"
 @using Syncfusion.Blazor.Charts
+@inject HttpClient Http
 
 <div class="sigmachart-container">
     <h2>Sigma Analysis - CV vs Bias</h2>
@@ -111,27 +112,52 @@
 
 @code {
 
-    public List<SigmaPoint> SigmaPoints = new()
+    public List<SigmaPoint> SigmaPoints = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        new() { CV=10, Bias=20 },
-        new() { CV=15, Bias=30 },
-        new() { CV=20, Bias=25 },
-        new() { CV=25, Bias=15 },
-        new() { CV=30, Bias=10 }
-    };
+        await LoadDataFromJson();
+    }
+
+    private async Task LoadDataFromJson()
+    {
+        try
+        {
+            var json = await Http.GetStringAsync("sample-data/sigma-data.json");
+            var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+            var data = System.Text.Json.JsonSerializer.Deserialize<SigmaJsonData>(json, options);
+
+            if (data?.SigmaPoints != null)
+            {
+                SigmaPoints = data.SigmaPoints;
+            }
+
+            Console.WriteLine($"Sigma data loaded: {SigmaPoints.Count} points");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading sigma data: {ex.Message}");
+        }
+    }
 
     // Propiedades calculadas para estadísticas
-    public double AverageCV => SigmaPoints.Average(x => x.CV);
-    public double MinCV => SigmaPoints.Min(x => x.CV);
-    public double MaxCV => SigmaPoints.Max(x => x.CV);
+    public double AverageCV => SigmaPoints.Count > 0 ? SigmaPoints.Average(x => x.CV) : 0;
+    public double MinCV => SigmaPoints.Count > 0 ? SigmaPoints.Min(x => x.CV) : 0;
+    public double MaxCV => SigmaPoints.Count > 0 ? SigmaPoints.Max(x => x.CV) : 0;
 
-    public double AverageBias => SigmaPoints.Average(x => x.Bias);
-    public double MinBias => SigmaPoints.Min(x => x.Bias);
-    public double MaxBias => SigmaPoints.Max(x => x.Bias);
+    public double AverageBias => SigmaPoints.Count > 0 ? SigmaPoints.Average(x => x.Bias) : 0;
+    public double MinBias => SigmaPoints.Count > 0 ? SigmaPoints.Min(x => x.Bias) : 0;
+    public double MaxBias => SigmaPoints.Count > 0 ? SigmaPoints.Max(x => x.Bias) : 0;
 
     public class SigmaPoint
     {
         public double CV { get; set; }
         public double Bias { get; set; }
+    }
+
+    public class SigmaJsonData
+    {
+        public List<SigmaPoint> SigmaPoints { get; set; } = new();
     }
 }

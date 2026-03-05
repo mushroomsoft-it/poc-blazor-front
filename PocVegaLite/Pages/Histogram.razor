@@ -1,6 +1,8 @@
 @page "/histogram"
 @inject IJSRuntime JS
+@inject HttpClient Http
 @using System.Collections.Generic
+@using System.Text.Json
 
 <div class="hist-container">
     <div class="header-section">
@@ -14,16 +16,15 @@
     <div class="controls-section">
         <div class="control-item">
             <label>Bin Count:</label>
-            <input type="range"
-                   min="5"
-                   max="50"
-                   step="1"
-                   value="@binCount"
-                   @oninput="async e =>
-                   {
-                       binCount = int.Parse(e.Value.ToString());
-                       await RenderHistogram(binCount);
-                   }" />
+            <input type="range" min="5" max="50" step="1" value="@binCount" @oninput="async e =>
+            {
+            var valueStr = e.Value?.ToString();
+            if (!string.IsNullOrEmpty(valueStr))
+            {
+            binCount = int.Parse(valueStr);
+            await RenderHistogram(binCount);
+            }
+            }" />
             <span>@binCount bins</span>
         </div>
     </div>
@@ -59,108 +60,113 @@
 </div>
 
 <style>
-.hist-container {
-    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-    min-height: 100vh;
-    padding: 40px 20px;
-    font-family: 'Segoe UI', Tahoma, Verdana, sans-serif;
-}
+    .hist-container {
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        min-height: 100vh;
+        padding: 40px 20px;
+        font-family: 'Segoe UI', Tahoma, Verdana, sans-serif;
+    }
 
-.header-section {
-    text-align: center;
-    margin-bottom: 40px;
-    color: #333;
-}
+    .header-section {
+        text-align: center;
+        margin-bottom: 40px;
+        color: #333;
+    }
 
-.header-section h1 {
-    font-size: 2.5em;
-    margin-bottom: 10px;
-    font-weight: 700;
-}
+    .header-section h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        font-weight: 700;
+    }
 
-.subtitle {
-    font-size: 1.1em;
-    color: #666;
-}
+    .subtitle {
+        font-size: 1.1em;
+        color: #666;
+    }
 
-.controls-section {
-    background: white;
-    border-radius: 12px;
-    padding: 20px 30px;
-    max-width: 1200px;
-    margin: 0 auto 30px auto;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
+    .controls-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px 30px;
+        max-width: 1200px;
+        margin: 0 auto 30px auto;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
 
-.control-item {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
+    .control-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
 
-.control-item input[type="range"] {
-    flex: 1;
-    max-width: 300px;
-}
+    .control-item input[type="range"] {
+        flex: 1;
+        max-width: 300px;
+    }
 
-.main-chart-card {
-    background: white;
-    border-radius: 16px;
-    padding: 30px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    margin: 0 auto;
-    max-width: 1200px;
-}
+    .main-chart-card {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        margin: 0 auto;
+        max-width: 1200px;
+    }
 
-.chart-title {
-    font-size: 1.4em;
-    font-weight: 600;
-    margin-bottom: 15px;
-    border-bottom: 4px solid #f76c6c;
-    padding-bottom: 12px;
-}
+    .chart-title {
+        font-size: 1.4em;
+        font-weight: 600;
+        margin-bottom: 15px;
+        border-bottom: 4px solid #f76c6c;
+        padding-bottom: 12px;
+    }
 
-.hist-main-container {
-    height: 350px;
-    width: 100%;
-}
+    .hist-main-container {
+        height: 350px;
+        width: 100%;
+    }
 
-.chart-info {
-    text-align: center;
-    margin-top: 15px;
-    font-size: 0.95em;
-    color: #7f8c8d;
-}
+    .chart-info {
+        text-align: center;
+        margin-top: 15px;
+        font-size: 0.95em;
+        color: #7f8c8d;
+    }
 
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 20px;
-    max-width: 1200px;
-    margin: 40px auto;
-}
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 20px;
+        max-width: 1200px;
+        margin: 40px auto;
+    }
 
-.stat-card {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-    text-align: center;
-}
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        text-align: center;
+    }
 
-.stat-label {
-    font-size: .85em;
-    color: #7f8c8d;
-}
+    .stat-label {
+        font-size: .85em;
+        color: #7f8c8d;
+    }
 
-.stat-value {
-    font-size: 1.8em;
-    font-weight: 700;
-    color: #f76c6c;
-}
+    .stat-value {
+        font-size: 1.8em;
+        font-weight: 700;
+        color: #f76c6c;
+    }
 </style>
 
 @code {
+
+    private class HistogramRecord
+    {
+        public double Val { get; set; }
+    }
 
     private Dictionary<string, object>[] histData = Array.Empty<Dictionary<string, object>>();
     private int binCount = 20;
@@ -172,19 +178,45 @@
     {
         if (!firstRender) return;
 
-        var rnd = new Random(123);
-        var values = new List<double>();
+        var values = await LoadDataFromJson();
 
-        for (int i = 0; i < 500; i++)
-            values.Add(rnd.NextDouble() * 100);
-
-        histData = values
-            .Select(v => new Dictionary<string, object> { ["val"] = v })
-            .ToArray();
-
-        ComputeStats(values);
+        if (values.Count > 0)
+        {
+            ComputeStats(values);
+        }
 
         await RenderHistogram(binCount);
+    }
+
+    private async Task<List<double>> LoadDataFromJson()
+    {
+        try
+        {
+            var json = await Http.GetStringAsync("sample-data/histogram-data.json");
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var records = JsonSerializer.Deserialize<List<HistogramRecord>>(json, options);
+
+            if (records != null && records.Count > 0)
+            {
+                var values = records.Select(r => r.Val).ToList();
+                histData = values
+                    .Select(v => new Dictionary<string, object> { { "val", v } })
+                    .ToArray();
+                Console.WriteLine($"Histogram data loaded successfully: {histData.Length} records");
+                return values;
+            }
+            else
+            {
+                Console.WriteLine("No records found in histogram JSON");
+                return new List<double>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading histogram JSON data: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            return new List<double>();
+        }
     }
 
     private async Task RenderHistogram(int bins)

@@ -1,5 +1,6 @@
 @page "/mean"
 @using Syncfusion.Blazor.Charts
+@inject HttpClient Http
 
 <div class="meanchart-container">
     <h2>QC Control Chart - Mean ± Standard Deviations</h2>
@@ -27,13 +28,13 @@
             <ChartStriplines>
 
                 <!-- Mean -->
-                <ChartStripline Start="@Mean" Size="0" Color="blue" DashArray="6,4"          Text="@($"Mean = {Mean:F2}")"
+                <ChartStripline Start="@Mean" Size="0" Color="blue" DashArray="6,4" Text="@($"Mean = {Mean:F2}")"
                                 HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End"
                                 VerticalAlignment="Syncfusion.Blazor.Charts.Anchor.Middle">
                 </ChartStripline>
 
                 <!-- ±1SD -->
-                <ChartStripline Start="@SD1Plus" Size="0" Color="green" DashArray="4,4"                 Text="@($"+1SD = {SD1Plus:F2}")"
+                <ChartStripline Start="@SD1Plus" Size="0" Color="green" DashArray="4,4" Text="@($"+1SD = {SD1Plus:F2}")"
                                 HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
 
                 <ChartStripline Start="@SD1Minus" Size="0" Color="green" DashArray="4,4"
@@ -47,10 +48,10 @@
                                 Text="@($"-2SD = {SD2Minus:F2}")" HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
 
                 <!-- ±3SD -->
-                <ChartStripline Start="@SD3Plus" Size="0" Color="red" DashArray="6,4"          Text="@($"+3SD = {SD3Plus:F2}")"
+                <ChartStripline Start="@SD3Plus" Size="0" Color="red" DashArray="6,4" Text="@($"+3SD = {SD3Plus:F2}")"
                                 HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
 
-                <ChartStripline Start="@SD3Minus" Size="0" Color="red" DashArray="6,4"                         Text="@($"-3SD = {SD3Minus:F2}")"
+                <ChartStripline Start="@SD3Minus" Size="0" Color="red" DashArray="6,4" Text="@($"-3SD = {SD3Minus:F2}")"
                                 HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
 
             </ChartStriplines>
@@ -119,7 +120,7 @@
                 <div style="background: #e3f2fd; padding: 12px; border-radius: 4px; text-align: center;">
                     <p style="margin: 0; color: #1976d2; font-size: 0.9em;"><strong>Normal</strong></p>
                     <p style="margin: 5px 0; font-size: 1.3em; color: #2196F3; font-weight: bold;">@(AllPoints.Count -
-                                                                                                                                    WarningPoints.Count - CriticalPoints.Count)</p>
+                                                                                                                                                            WarningPoints.Count - CriticalPoints.Count)</p>
                     </div>
                     <div style="background: #fff3e0; padding: 12px; border-radius: 4px; text-align: center;">
                         <p style="margin: 0; color: #e65100; font-size: 0.9em;"><strong>Warnings</strong></p>
@@ -182,27 +183,39 @@
     public double YAxisMin;
     public double YAxisMax;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        var random = new Random();
-
-        // Mayor variabilidad para que se vea bien
-        for (int i = 1; i <= 30; i++)
-        {
-            double value = 100 + (random.NextDouble() * 40 - 20);
-            AllPoints.Add(new DataPoint
-            {
-                Day = i.ToString(),
-                Value = value
-            });
-        }
-
+        await LoadDataFromJson();
         CalculateStatistics();
         ClassifyPoints();
     }
 
+    private async Task LoadDataFromJson()
+    {
+        try
+        {
+            var json = await Http.GetStringAsync("sample-data/mean-chart-data.json");
+            var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+            var data = System.Text.Json.JsonSerializer.Deserialize<MeanChartJsonData>(json, options);
+
+            if (data?.AllPoints != null)
+            {
+                AllPoints = data.AllPoints;
+            }
+
+            Console.WriteLine($"Mean chart data loaded: {AllPoints.Count} points");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading mean chart data: {ex.Message}");
+        }
+    }
+
     private void CalculateStatistics()
     {
+        if (AllPoints.Count == 0) return;
+
         Mean = AllPoints.Average(x => x.Value);
 
         double variance = AllPoints.Average(x =>
@@ -238,5 +251,10 @@
     {
         public string Day { get; set; } = "";
         public double Value { get; set; }
+    }
+
+    public class MeanChartJsonData
+    {
+        public List<DataPoint> AllPoints { get; set; } = new();
     }
 }

@@ -1,5 +1,6 @@
 @page "/normal-curve"
 @using Syncfusion.Blazor.Charts
+@inject HttpClient Http
 
 <div class="normalcurve-container">
     <h2>Normal Distribution Curve - Empirical Rule 68-95-99.7</h2>
@@ -95,14 +96,31 @@
     public List<PointData> NormalData = new();
     public double MaxDensity { get; set; }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        MaxDensity = 1 / Math.Sqrt(2 * Math.PI); // ≈ 0.3989
+        await LoadDataFromJson();
+        MaxDensity = NormalData.Count > 0 ? NormalData.Max(x => x.Y) : 0.3989;
+    }
 
-        for (double x = -4; x <= 4; x += 0.1)
+    private async Task LoadDataFromJson()
+    {
+        try
         {
-            double y = MaxDensity * Math.Exp(-0.5 * x * x);
-            NormalData.Add(new PointData { X = x, Y = y });
+            var json = await Http.GetStringAsync("sample-data/normal-curve-data.json");
+            var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+            var data = System.Text.Json.JsonSerializer.Deserialize<NormalCurveJsonData>(json, options);
+
+            if (data?.NormalCurveData != null)
+            {
+                NormalData = data.NormalCurveData;
+            }
+
+            Console.WriteLine($"Normal curve data loaded: {NormalData.Count} points");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading normal curve data: {ex.Message}");
         }
     }
 
@@ -110,5 +128,10 @@
     {
         public double X { get; set; }
         public double Y { get; set; }
+    }
+
+    public class NormalCurveJsonData
+    {
+        public List<PointData> NormalCurveData { get; set; } = new();
     }
 }

@@ -1,5 +1,6 @@
 @page "/histogram"
 @using Syncfusion.Blazor.Charts
+@inject HttpClient Http
 
 <div class="histogram-container">
     <h2>Distribution Analysis - Histogram with Normal Curve</h2>
@@ -78,27 +79,45 @@
 
 @code {
 
-    public List<HistogramPoint> HistogramData = new()
-    {
-        new() { Range="40-44", Frequency=5 },
-        new() { Range="44-48", Frequency=12 },
-        new() { Range="48-52", Frequency=20 },
-        new() { Range="52-56", Frequency=18 },
-        new() { Range="56-60", Frequency=8 },
-    };
+    public List<HistogramPoint> HistogramData = new();
+    public List<CurvePoint> CurveData = new();
 
-    public List<CurvePoint> CurveData = new()
+    protected override async Task OnInitializedAsync()
     {
-        new() { Range="40-44", Value=4 },
-        new() { Range="44-48", Value=10 },
-        new() { Range="48-52", Value=18 },
-        new() { Range="52-56", Value=14 },
-        new() { Range="56-60", Value=6 },
-    };
+        await LoadDataFromJson();
+    }
+
+    private async Task LoadDataFromJson()
+    {
+        try
+        {
+            var json = await Http.GetStringAsync("sample-data/histogram-data.json");
+            var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+            var data = System.Text.Json.JsonSerializer.Deserialize<HistogramJsonData>(json, options);
+
+            if (data?.Histogram != null)
+            {
+                HistogramData = data.Histogram;
+            }
+
+            if (data?.Curve != null)
+            {
+                CurveData = data.Curve;
+            }
+
+            Console.WriteLine($"Histogram data loaded: {HistogramData.Count} points");
+            Console.WriteLine($"Curve data loaded: {CurveData.Count} points");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading histogram data: {ex.Message}");
+        }
+    }
 
     // Propiedades calculadas para estadísticas
-    public double TotalFrequency => HistogramData.Sum(x => x.Frequency);
-    public double MaxFrequency => HistogramData.Max(x => x.Frequency);
+    public double TotalFrequency => HistogramData.Count > 0 ? HistogramData.Sum(x => x.Frequency) : 0;
+    public double MaxFrequency => HistogramData.Count > 0 ? HistogramData.Max(x => x.Frequency) : 0;
     public string AverageRange => "52";
 
     public class HistogramPoint
@@ -111,5 +130,12 @@
     {
         public string Range { get; set; } = "";
         public double Value { get; set; }
+    }
+
+    // Clase para deserializar el JSON
+    public class HistogramJsonData
+    {
+        public List<HistogramPoint> Histogram { get; set; } = new();
+        public List<CurvePoint> Curve { get; set; } = new();
     }
 }
