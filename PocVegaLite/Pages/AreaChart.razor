@@ -26,12 +26,24 @@
             <div class="stat-value">$@totalRevenue K</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Average</div>
+            <div class="stat-label">Total Costs</div>
+            <div class="stat-value">$@totalCosts K</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Average Revenue</div>
             <div class="stat-value">$@averageRevenue K</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Max</div>
+            <div class="stat-label">Average Costs</div>
+            <div class="stat-value">$@averageCosts K</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Max Revenue</div>
             <div class="stat-value">$@maxRevenue K</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Profit Margin</div>
+            <div class="stat-value">@profitMargin%</div>
         </div>
     </div>
 
@@ -114,13 +126,17 @@
     {
         public string? Month { get; set; }
         public double Revenue { get; set; }
+        public double Costs { get; set; }
     }
 
     private Dictionary<string, object>[] salesData = Array.Empty<Dictionary<string, object>>();
 
     private double totalRevenue;
+    private double totalCosts;
     private double averageRevenue;
+    private double averageCosts;
     private double maxRevenue;
+    private double profitMargin;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -147,7 +163,8 @@
                 salesData = records.Select(r => new Dictionary<string, object>
                 {
                     { "month", r.Month ?? "" },
-                    { "revenue", r.Revenue }
+                    { "revenue", r.Revenue },
+                    { "costs", r.Costs }
                 }).ToArray();
                 Console.WriteLine($"Data loaded successfully: {salesData.Length} records");
             }
@@ -167,15 +184,32 @@
 
     private void ComputeStats()
     {
-        var values = salesData.Select(d => Convert.ToDouble(d["revenue"])).ToList();
+        if (salesData.Length == 0) return;
 
-        totalRevenue = values.Sum();
-        averageRevenue = Math.Round(values.Average(), 2);
-        maxRevenue = values.Max();
+        var revenueValues = salesData.Select(d => Convert.ToDouble(d["revenue"])).ToList();
+        var costValues = salesData.Select(d => Convert.ToDouble(d["costs"])).ToList();
+
+        totalRevenue = revenueValues.Sum();
+        totalCosts = costValues.Sum();
+        averageRevenue = Math.Round(revenueValues.Average(), 2);
+        averageCosts = Math.Round(costValues.Average(), 2);
+        maxRevenue = revenueValues.Max();
+
+        var profit = totalRevenue - totalCosts;
+        profitMargin = Math.Round((profit / totalRevenue) * 100, 2);
     }
 
     private async Task RenderAreaChart()
     {
+        // Crear líneas de referencia con colores por rango
+        var referenceLines = new List<Dictionary<string, object>>
+        {
+            new Dictionary<string, object> { { "value", 100 }, { "color", "#e74c3c" } }, // Rojo 100
+            new Dictionary<string, object> { { "value", 150 }, { "color", "#f39c12" } }, // Naranja 150
+            new Dictionary<string, object> { { "value", 200 }, { "color", "#2ecc71" } }, // Verde 200
+            new Dictionary<string, object> { { "value", 250 }, { "color", "#3498db" } } // Azul 250
+        };
+
         var spec = new Dictionary<string, object>
         {
             ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
@@ -196,60 +230,169 @@
                 }
             },
 
-            ["mark"] = new Dictionary<string, object>
+            ["layer"] = new object[]
             {
-                ["type"] = "area",
-                ["interpolate"] = "monotone",
-                ["opacity"] = 0.6,
-                ["line"] = new Dictionary<string, object>
+                // Capa 0: Líneas de referencia de grid
+                new Dictionary<string, object>
                 {
-                    ["color"] = "#2196F3",
-                    ["strokeWidth"] = 2
+                    ["data"] = new Dictionary<string, object> { ["values"] = referenceLines },
+                    ["mark"] = new Dictionary<string, object>
+                    {
+                        ["type"] = "rule",
+                        ["size"] = 2,
+                        ["opacity"] = 0.6
+                    },
+                    ["encoding"] = new Dictionary<string, object>
+                    {
+                        ["y"] = new Dictionary<string, object>
+                        {
+                            ["field"] = "value",
+                            ["type"] = "quantitative"
+                        },
+                        ["color"] = new Dictionary<string, object>
+                        {
+                            ["field"] = "color",
+                            ["type"] = "nominal",
+                            ["scale"] = new Dictionary<string, object>
+                            {
+                                ["domain"] = new[] { "#e74c3c", "#f39c12", "#2ecc71", "#3498db" },
+                                ["range"] = new[] { "#e74c3c", "#f39c12", "#2ecc71", "#3498db" }
+                            },
+                            ["legend"] = null
+                        }
+                    }
                 },
-                ["point"] = new Dictionary<string, object>
+                new Dictionary<string, object>
                 {
-                    ["filled"] = true,
-                    ["size"] = 60,
-                    ["color"] = "#1976D2"
+                    ["mark"] = new Dictionary<string, object>
+                    {
+                        ["type"] = "area",
+                        ["interpolate"] = "monotone",
+                        ["opacity"] = 0.6,
+                        ["line"] = new Dictionary<string, object>
+                        {
+                            ["color"] = "#2196F3",
+                            ["strokeWidth"] = 3
+                        },
+                        ["point"] = new Dictionary<string, object>
+                        {
+                            ["filled"] = true,
+                            ["size"] = 60,
+                            ["color"] = "#1976D2"
+                        }
+                    },
+
+                    ["encoding"] = new Dictionary<string, object>
+                    {
+                        ["x"] = new Dictionary<string, object>
+                        {
+                            ["field"] = "month",
+                            ["type"] = "ordinal",
+                            ["title"] = "Month",
+                            ["sort"] = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun" }
+                        },
+
+                        ["y"] = new Dictionary<string, object>
+                        {
+                            ["field"] = "revenue",
+                            ["type"] = "quantitative",
+                            ["title"] = "Amount ($K)"
+                        },
+
+                        ["color"] = new Dictionary<string, object>
+                        {
+                            ["value"] = "#64B5F6"
+                        },
+
+                        ["tooltip"] = new object[]
+                        {
+                            new Dictionary<string, object>
+                            {
+                                ["field"] = "month",
+                                ["type"] = "ordinal",
+                                ["title"] = "Month"
+                            },
+                            new Dictionary<string, object>
+                            {
+                                ["field"] = "revenue",
+                                ["type"] = "quantitative",
+                                ["title"] = "Revenue ($K)"
+                            }
+                        }
+                    }
+                },
+
+                // Capa 2: Área de Costs
+                new Dictionary<string, object>
+                {
+                    ["mark"] = new Dictionary<string, object>
+                    {
+                        ["type"] = "area",
+                        ["interpolate"] = "monotone",
+                        ["opacity"] = 0.5,
+                        ["line"] = new Dictionary<string, object>
+                        {
+                            ["color"] = "#FF6F00",
+                            ["strokeWidth"] = 3
+                        },
+                        ["point"] = new Dictionary<string, object>
+                        {
+                            ["filled"] = true,
+                            ["size"] = 50,
+                            ["color"] = "#E65100"
+                        }
+                    },
+
+                    ["encoding"] = new Dictionary<string, object>
+                    {
+                        ["x"] = new Dictionary<string, object>
+                        {
+                            ["field"] = "month",
+                            ["type"] = "ordinal",
+                            ["sort"] = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun" }
+                        },
+
+                        ["y"] = new Dictionary<string, object>
+                        {
+                            ["field"] = "costs",
+                            ["type"] = "quantitative"
+                        },
+
+                        ["color"] = new Dictionary<string, object>
+                        {
+                            ["value"] = "#FFB74D"
+                        },
+
+                        ["tooltip"] = new object[]
+                        {
+                            new Dictionary<string, object>
+                            {
+                                ["field"] = "month",
+                                ["type"] = "ordinal",
+                                ["title"] = "Month"
+                            },
+                            new Dictionary<string, object>
+                            {
+                                ["field"] = "costs",
+                                ["type"] = "quantitative",
+                                ["title"] = "Costs ($K)"
+                            }
+                        }
+                    }
                 }
             },
 
-            ["encoding"] = new Dictionary<string, object>
+            ["config"] = new Dictionary<string, object>
             {
-                ["x"] = new Dictionary<string, object>
+                ["axis"] = new Dictionary<string, object>
                 {
-                    ["field"] = "month",
-                    ["type"] = "ordinal",
-                    ["title"] = "Month",
-                    ["sort"] = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun" }
+                    ["gridColor"] = "#d0d0d0",
+                    ["gridOpacity"] = 0.5,
+                    ["gridDash"] = new int[] { 3, 3 }
                 },
-
-                ["y"] = new Dictionary<string, object>
+                ["mark"] = new Dictionary<string, object>
                 {
-                    ["field"] = "revenue",
-                    ["type"] = "quantitative",
-                    ["title"] = "Revenue ($K)"
-                },
-
-                ["color"] = new Dictionary<string, object>
-                {
-                    ["value"] = "#64B5F6"
-                },
-
-                ["tooltip"] = new object[]
-                {
-                    new Dictionary<string, object>
-                    {
-                        ["field"] = "month",
-                        ["type"] = "ordinal",
-                        ["title"] = "Month"
-                    },
-                    new Dictionary<string, object>
-                    {
-                        ["field"] = "revenue",
-                        ["type"] = "quantitative",
-                        ["title"] = "Revenue ($K)"
-                    }
+                    ["opacity"] = 0.8
                 }
             }
         };

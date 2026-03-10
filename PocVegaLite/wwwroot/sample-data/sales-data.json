@@ -1,8 +1,8 @@
 [
-  { "month": "Jan", "revenue": 120 },
-  { "month": "Feb", "revenue": 150 },
-  { "month": "Mar", "revenue": 180 },
-  { "month": "Apr", "revenue": 170 },
-  { "month": "May", "revenue": 200 },
-  { "month": "Jun", "revenue": 220 }
+  { "month": "Jan", "revenue": 120, "costs": 80 },
+  { "month": "Feb", "revenue": 150, "costs": 90 },
+  { "month": "Mar", "revenue": 180, "costs": 110 },
+  { "month": "Apr", "revenue": 170, "costs": 100 },
+  { "month": "May", "revenue": 200, "costs": 120 },
+  { "month": "Jun", "revenue": 220, "costs": 130 }
 ]

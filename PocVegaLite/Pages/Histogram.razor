@@ -173,6 +173,8 @@
     private int selectedCount;
     private string meanValue = "0";
     private string stdDev = "0";
+    private double mean = 0;
+    private double stdev = 0;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -269,10 +271,11 @@
     private void ComputeStats(List<double> vals)
     {
         selectedCount = vals.Count;
-        var mean = vals.Average();
+        mean = vals.Average();
         meanValue = mean.ToString("F2");
 
         var variance = vals.Select(v => Math.Pow(v - mean, 2)).Average();
-        stdDev = Math.Sqrt(variance).ToString("F2");
+        stdev = Math.Sqrt(variance);
+        stdDev = stdev.ToString("F2");
     }
 }

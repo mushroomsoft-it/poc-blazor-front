@@ -99,6 +99,27 @@
 
     private async Task RenderChart()
     {
+        // Crear datos para las líneas horizontales con colores específicos
+        var gridLines = new List<object>
+        {
+            // 45: Color Gris
+            new { value = 45, color = "#95a5a6" },
+            // Rango 50-55: Color Azul
+            new { value = 50, color = "#3498db" },
+            new { value = 55, color = "#3498db" },
+            // Rango 60-65: Color Verde
+            new { value = 60, color = "#2ecc71" },
+            new { value = 65, color = "#2ecc71" },
+            // Rango 70-75: Color Naranja
+            new { value = 70, color = "#e74c3c" },
+            new { value = 75, color = "#e74c3c" },
+            // Rango 80-85: Color Púrpura
+            new { value = 80, color = "#9b59b6" },
+            new { value = 85, color = "#9b59b6" },
+            // 90: Color Dorado
+            new { value = 90, color = "#f39c12" }
+        };
+
         var spec = new Dictionary<string, object>
         {
             ["$schema"] = "https://vega.github.io/schema/vega-lite/v5.json",
@@ -117,8 +138,48 @@
                 ["values"] = data
             },
 
+            ["transform"] = new object[]
+            {
+                // Si necesitas transformar datos, aquí iría
+            },
+
+            ["resolve"] = new Dictionary<string, object>
+            {
+                ["scale"] = new Dictionary<string, object> { ["color"] = "independent" }
+            },
+
             ["layer"] = new object[]
             {
+                // Capa de líneas de grid personalizadas
+                new Dictionary<string, object>
+                {
+                    ["data"] = new Dictionary<string, object> { ["values"] = gridLines },
+                    ["mark"] = new Dictionary<string, object>
+                    {
+                        ["type"] = "rule",
+                        ["size"] = 2,
+                        ["opacity"] = 0.7
+                    },
+                    ["encoding"] = new Dictionary<string, object>
+                    {
+                        ["y"] = new Dictionary<string, object>
+                        {
+                            ["field"] = "value",
+                            ["type"] = "quantitative"
+                        },
+                        ["color"] = new Dictionary<string, object>
+                        {
+                            ["field"] = "color",
+                            ["type"] = "nominal",
+                            ["scale"] = new Dictionary<string, object> { ["domain"] = new[] { "#95a5a6", "#3498db", "#2ecc71", "#e74c3c", "#9b59b6",
+"#f39c12" },
+["range"] = new[] { "#95a5a6", "#3498db", "#2ecc71", "#e74c3c", "#9b59b6", "#f39c12" } },
+                            ["legend"] = null
+                        }
+                    }
+                },
+
+                // Capa de líneas principales
                 new Dictionary<string, object>
                 {
                     ["mark"] = new Dictionary<string, object>
@@ -134,7 +195,14 @@
                         {
                             ["field"] = "date",
                             ["type"] = "temporal",
-                            ["title"] = "Fecha"
+                            ["title"] = "Fecha",
+                            ["format"] = "%Y-%m-%d",
+                            ["axis"] = new Dictionary<string, object>
+                            {
+                                ["format"] = "%Y-%m-%d",
+                                ["labelAngle"] = -45,
+                                ["labelAlign"] = "right"
+                            }
                         },
 
                         ["y"] = new Dictionary<string, object>
@@ -198,6 +266,15 @@
                 {
                     ["type"] = "interval",
                     ["bind"] = "scales"
+                }
+            },
+
+            ["config"] = new Dictionary<string, object>
+            {
+                ["axis"] = new Dictionary<string, object>
+                {
+                    ["gridColor"] = "transparent", // Desactivar grid automático
+                    ["gridOpacity"] = 0
                 }
             }
         };

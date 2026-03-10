@@ -18,41 +18,46 @@
         <ChartLegendSettings Visible="true" Position="LegendPosition.Top" Background="white">
         </ChartLegendSettings>
 
-        <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category" Title="Measurement Day"
-                           LabelFormat="Day {value}">
+        <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category" Title="Measurement Date"
+                           LabelFormat="{value}">
             <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
         </ChartPrimaryXAxis>
 
         <ChartPrimaryYAxis Title="Measured Value" LabelFormat="N0" Minimum="@YAxisMin" Maximum="@YAxisMax">
 
+            <ChartAxisMajorGridLines Width="2" Color="#E8E8E8" DashArray="3,2"></ChartAxisMajorGridLines>
+
             <ChartStriplines>
 
+                <!-- ±3SD (Más bajo) -->
+                <ChartStripline Start="@SD3Minus" Size="0" Color="#0D47A1" DashArray="6,4"
+                                Text="@($"-3SD = {SD3Minus:F2}")" HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
+
+                <!-- ±2SD -->
+                <ChartStripline Start="@SD2Minus" Size="0" Color="#1976D2" DashArray="4,4"
+                                Text="@($"-2SD = {SD2Minus:F2}")" HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
+
+                <!-- ±1SD -->
+                <ChartStripline Start="@SD1Minus" Size="0" Color="#4CAF50" DashArray="4,4"
+                                Text="@($"-1SD = {SD1Minus:F2}")" HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
+
                 <!-- Mean -->
-                <ChartStripline Start="@Mean" Size="0" Color="blue" DashArray="6,4" Text="@($"Mean = {Mean:F2}")"
+                <ChartStripline Start="@Mean" Size="0" Color="#FBC02D" DashArray="6,4" Text="@($"Mean = {Mean:F2}")"
                                 HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End"
                                 VerticalAlignment="Syncfusion.Blazor.Charts.Anchor.Middle">
                 </ChartStripline>
 
                 <!-- ±1SD -->
-                <ChartStripline Start="@SD1Plus" Size="0" Color="green" DashArray="4,4" Text="@($"+1SD = {SD1Plus:F2}")"
-                                HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
-
-                <ChartStripline Start="@SD1Minus" Size="0" Color="green" DashArray="4,4"
-                                Text="@($"-1SD = {SD1Minus:F2}")" HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
+                <ChartStripline Start="@SD1Plus" Size="0" Color="#FF9800" DashArray="4,4"
+                                Text="@($"+1SD = {SD1Plus:F2}")" HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
 
                 <!-- ±2SD -->
-                <ChartStripline Start="@SD2Plus" Size="0" Color="orange" DashArray="4,4"
+                <ChartStripline Start="@SD2Plus" Size="0" Color="#E64A19" DashArray="4,4"
                                 Text="@($"+2SD = {SD2Plus:F2}")" HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
 
-                <ChartStripline Start="@SD2Minus" Size="0" Color="orange" DashArray="4,4"
-                                Text="@($"-2SD = {SD2Minus:F2}")" HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
-
-                <!-- ±3SD -->
-                <ChartStripline Start="@SD3Plus" Size="0" Color="red" DashArray="6,4" Text="@($"+3SD = {SD3Plus:F2}")"
-                                HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
-
-                <ChartStripline Start="@SD3Minus" Size="0" Color="red" DashArray="6,4" Text="@($"-3SD = {SD3Minus:F2}")"
-                                HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
+                <!-- ±3SD (Más alto) -->
+                <ChartStripline Start="@SD3Plus" Size="0" Color="#C62828" DashArray="6,4"
+                                Text="@($"+3SD = {SD3Plus:F2}")" HorizontalAlignment="Syncfusion.Blazor.Charts.Anchor.End" />
 
             </ChartStriplines>
 
@@ -61,19 +66,19 @@
         <ChartSeriesCollection>
 
             <!-- Baseline (Control) -->
-            <ChartSeries DataSource="@AllPoints" Name="Normal Measurements" XName="Day" YName="Value"
+            <ChartSeries DataSource="@AllPoints" Name="Normal Measurements" XName="Date" YName="Value"
                          Type="ChartSeriesType.Line" Width="2" Fill="#2196F3">
                 <ChartMarker Visible="true" Width="8" Height="8" Fill="#2196F3"></ChartMarker>
             </ChartSeries>
 
             <!-- Warnings ±2SD -->
-            <ChartSeries DataSource="@WarningPoints" Name="Warnings (±2SD)" XName="Day" YName="Value"
+            <ChartSeries DataSource="@WarningPoints" Name="Warnings (±2SD)" XName="Date" YName="Value"
                          Type="ChartSeriesType.Scatter" Fill="#FF9800">
                 <ChartMarker Visible="true" Width="12" Height="12" Fill="#FF9800"></ChartMarker>
             </ChartSeries>
 
             <!-- Critical ±3SD -->
-            <ChartSeries DataSource="@CriticalPoints" Name="Critical (±3SD)" XName="Day" YName="Value"
+            <ChartSeries DataSource="@CriticalPoints" Name="Critical (±3SD)" XName="Date" YName="Value"
                          Type="ChartSeriesType.Scatter" Fill="#F44336">
                 <ChartMarker Visible="true" Width="14" Height="14" Fill="#F44336"></ChartMarker>
             </ChartSeries>
@@ -91,10 +96,13 @@
             <li><strong style="color: #FF9800;">● Orange Points:</strong> Warnings - Between ±2σ and ±3σ (Review
                 process)</li>
                 <li><strong style="color: #F44336;">● Red Points:</strong> Critical - Outside ±3σ (Stop and correct)</li>
-                <li><strong style="color: #1976d2;">— Blue Line:</strong> Mean (average of all measurements)</li>
-                <li><strong style="color: #4caf50;">— Green Lines:</strong> ±1 Standard Deviation (≈68% of data)</li>
-                <li><strong style="color: #ff9800;">— Orange Lines:</strong> ±2 Standard Deviations (≈95% of data)</li>
-                <li><strong style="color: #f44336;">— Red Lines:</strong> ±3 Standard Deviations (≈99.7% of data)</li>
+                <li><strong style="color: #0D47A1;">— Darkest Blue Line:</strong> -3SD (Lowest values)</li>
+                <li><strong style="color: #1976d2;">— Blue Line:</strong> -2SD</li>
+                <li><strong style="color: #4caf50;">— Green Line:</strong> -1SD</li>
+                <li><strong style="color: #FBC02D;">— Yellow Line:</strong> Mean (Center)</li>
+                <li><strong style="color: #ff9800;">— Orange Line:</strong> +1SD</li>
+                <li><strong style="color: #E64A19;">— Dark Orange Line:</strong> +2SD</li>
+                <li><strong style="color: #c62828;">— Dark Red Line:</strong> +3SD (Highest values)</li>
             </ul>
         </div>
 
@@ -120,7 +128,7 @@
                 <div style="background: #e3f2fd; padding: 12px; border-radius: 4px; text-align: center;">
                     <p style="margin: 0; color: #1976d2; font-size: 0.9em;"><strong>Normal</strong></p>
                     <p style="margin: 5px 0; font-size: 1.3em; color: #2196F3; font-weight: bold;">@(AllPoints.Count -
-                                                                                                                                                            WarningPoints.Count - CriticalPoints.Count)</p>
+                                                                                                                                                                                                                                                                                                                                    WarningPoints.Count - CriticalPoints.Count)</p>
                     </div>
                     <div style="background: #fff3e0; padding: 12px; border-radius: 4px; text-align: center;">
                         <p style="margin: 0; color: #e65100; font-size: 0.9em;"><strong>Warnings</strong></p>
@@ -249,7 +257,7 @@
 
     public class DataPoint
     {
-        public string Day { get; set; } = "";
+        public string Date { get; set; } = "";
         public double Value { get; set; }
     }
 
